@@ -38,7 +38,8 @@ function animateBodies(){const days=d;
   hdTick();
   if(solL.g.visible){propagate(AST,d);AST.attr.needsUpdate=true;propagate(TRO,d);TRO.attr.needsUpdate=true;propagate(KBO,d);KBO.attr.needsUpdate=true}
   if(oortL.g.visible){propagate(OORT,d);OORT.attr.needsUpdate=true}
-  if(galL.g.visible){galMat.uniforms.uTime.value=yrs();galMat.uniforms.uTd.value=galTd;galMat.uniforms.uMode.value=galMode}
+  if(galL.g.visible){if(galMat){galMat.uniforms.uTime.value=yrs();galMat.uniforms.uTd.value=galTd;galMat.uniforms.uMode.value=galMode}
+    if(galPlane){galPlane.rotation.z=-7.672e-4/Math.hypot(26700,3000)*yrs();galPlaneMat.userData.base=(galMode?.12:.96)*ss(19.95,20.75,s)}}
   /* sky sphere morph */
   const Rly=12*Math.pow(10,s)/LY;
   if(starMat){starMat.uniforms.uMorph.value=skyMorph;starMat.uniforms.uR.value=Rly;conMat.uniforms.uMorph.value=skyMorph;conMat.uniforms.uR.value=Rly;mwMat.uniforms.uMorph.value=1;mwMat.uniforms.uR.value=Rly*1.01;mwMat.userData.base=skyMorph*.5;conMat.userData.base=CAT_ON.con?.38*skyMorph:0;if(oriMat)oriMat.userData.base=.55*(1-skyMorph);

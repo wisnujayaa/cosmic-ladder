@@ -8,7 +8,7 @@ An interactive 3D journey from Earth to the edge of the observable universe and 
 
 - **11 scale levels**: Earth, Earth–Moon, inner solar system, solar system, heliosphere, Oort Cloud, neighbouring stars, Milky Way, Local Group, Laniakea and the observable universe.
 - **Real positions**: planets are computed from JPL Keplerian elements, solving Kepler's equation with Newton's method. Earth's rotation follows sidereal time (GMST). Hundreds of moons use JPL mean elements, and asteroids and dwarf planets come from the JPL Small-Body Database.
-- **NASA-style realism**: 4K textures streamed on demand as you approach a world, relief normal maps, Earth with moving cloud shadows, ocean sun glint, city lights and a sunset-coloured terminator, sun-aware atmospheres (Venus, Mars, Titan, giant planets), and Saturn's rings and globe casting shadows on each other.
+- **NASA-style realism**: 4K textures streamed on demand as you approach a world, relief normal maps, Earth with moving cloud shadows, ocean sun glint, city lights and a sunset-coloured terminator, sun-aware atmospheres (Venus, Mars, Titan, giant planets), and Saturn's rings and globe casting shadows on each other. At galaxy scale, NASA's face-on Milky Way map is combined with 42,000 3D stars sampled from it.
 - **Real sky**: HYG star catalogue, Stellarium constellation lines, and nebula and galaxy photos.
 - **Two-way guided tour** (Earth → Universe, Universe → Earth) with documentary narration, subtitles and a chapter player (pause, replay, skip).
 - **Learning hub**: 27-question quiz, 25-term glossary, progress tracking and keyboard shortcuts.
@@ -56,6 +56,7 @@ There is no build step: edit the files and reload. The `js/main/*.js` files are 
 ## Data and image credits
 
 - Sun, giant-planet and some moon textures: [Solar System Scope](https://www.solarsystemscope.com/textures/), CC BY 4.0, based on NASA data.
+- Face-on Milky Way: NASA/JPL-Caltech/R. Hurt (SSC/Caltech), taken from the [mw_plot](https://github.com/henrysky/milkyway_plot) package; the galaxy's 3D star particles are sampled from this map's brightness so they follow the same arms.
 - High-resolution textures (streamed when you get close) and relief normal maps for the Moon, Mercury, Mars, the giant planets, Pluto, Charon and the major moons: [RSS-Textures](https://github.com/KSP-RO/RSS-Textures) (NathanKell et al.), **CC BY-NC-SA**, largely based on NASA/JPL imagery, Steve Albers and the Celestia Motherlode. Because of that licence, these textures may only be reused non-commercially and under the same terms.
 - High-resolution Earth: NASA Blue Marble, Black Marble and topography (public domain), via [three-globe](https://github.com/vasturiano/three-globe).
 - Terrestrial planet textures: Planet Pixel Emporium (James Hastings-Trew). Earth night lights: NASA Black Marble. Mercury: NASA/JHUAPL/Carnegie (MESSENGER). Moon: NASA SVS.

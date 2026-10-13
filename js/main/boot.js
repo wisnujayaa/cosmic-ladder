@@ -34,7 +34,7 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(bgStarMat){const f=(1-ss(16.3,17.0,s))*(1-skyMorph);bgStarMat.uniforms.uOpacity.value=.8*f;bgMwMat.uniforms.uOpacity.value=.3*f}
   root.quaternion.copy(qEcl).slerp(qId,ss(16.6,19.6,s));
   tgt=computeTarget();
-  bloom.strength=.3+.55*ss(9,16,s)-.15*ss(20.5,22,s);bloom.threshold=.86-.3*ss(9,16,s);
+  {const gw=ss(19.3,20.1,s)*(1-ss(22.4,23.2,s));bloom.strength=.3+.55*ss(9,16,s)-.15*ss(20.5,22,s)-.55*gw;bloom.threshold=.86-.3*ss(9,16,s)+.32*gw}
   {const cd=camera.position.clone().normalize();const rot=prevCam?Math.acos(Math.min(1,cd.dot(prevCam)))/Math.max(dt,1e-3):0;const side=prevCam?Math.sign(prevCam.x*cd.z-prevCam.z*cd.x):0;prevCam=cd;MK.sndUpdate(Math.abs(s-sPrev)/Math.max(dt,1e-3)+(panDecay?.4:0),Math.sign(s-sPrev),rot,side*Math.min(1,rot))}
   layoutOffset(dt);applyLayers();animateBodies();controls.update();composer.render();drawOverlay();drawMeasure();updateHud();
   requestAnimationFrame(frame)}

@@ -53,9 +53,12 @@ function addPhoto(obj,ph,dist,k){const P=PHOTOS[ph];const m=reg(obj.L,new THREE.
 
 /* ---------- Milky Way (ly, galactic, shader-rotated) ---------- */
 const galL=layer('galaxy',LY,A.M_GAL,()=>GC,s=>win(19.6,24.9,.9,s));
-let galMat;
-{const pos=[],cols=[],pol=[],sz=[];const r=rng(77),g=()=>gauss(r);const k=1/Math.tan(14*DEG);const barAng=Math.PI-27*DEG;
- const push=(x,y,z,col,s)=>{pol.push(Math.hypot(x,y),Math.atan2(y,x),z);pos.push(0,0,0);cols.push(...col);sz.push(s)};
+let galMat=null,galPlane=null,galPlaneMat=null;
+const GAL_HALF=2800/1078*26700; /* NASA/JPL-Caltech (R. Hurt) face-on map: 1078 px = Sun-centre distance */
+function galPoints(pol,cols,sz){const n=sz.length;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(n*3),3));geo.setAttribute('aColor',new THREE.Float32BufferAttribute(cols,3));geo.setAttribute('aPol',new THREE.Float32BufferAttribute(pol,3));geo.setAttribute('aSize',new THREE.Float32BufferAttribute(sz,1));
+  galMat=reg(galL,pmat(1.5,.1,VS_GAL));const pts=new THREE.Points(geo,galMat);pts.frustumCulled=false;galL.q.add(pts)}
+function galProcedural(){const pos=[],cols=[],pol=[],sz=[];const r=rng(77),g=()=>gauss(r);const k=1/Math.tan(14*DEG);const barAng=Math.PI-27*DEG;
+ const push=(x,y,z,col,s)=>{pol.push(Math.hypot(x,y),Math.atan2(y,x),z);cols.push(...col);sz.push(s)};
  const warm=C('#ffd2a0'),blue=C('#bcd2ff'),dim=C('#8a98c4'),pink=C('#ff7fa8');
  for(let i=0;i<60000;i++){const p=r();
   if(p<.13){const rad=Math.abs(g())*2600;const t=r()*TAU;push(rad*Math.cos(t),rad*Math.sin(t),g()*1300,warm.map(c=>c*(.6+.4*r())),1.1)}
@@ -63,9 +66,20 @@ let galMat;
   else if(p<.78){const rad=6000+44000*Math.pow(r(),.9);const arm=(i%4)*TAU/4;const t=arm+Math.log(rad/6000)*k+g()*.2;const sp=g()*900;const col=r()<.05?pink:blue;
     push(rad*Math.cos(t)+sp*Math.cos(t+1.57),rad*Math.sin(t)+sp*Math.sin(t+1.57),g()*320,col.map(c=>c*(.5+.5*r())),r()<.05?2.2:1)}
   else{const rad=-10000*Math.log(1-r()*.995);if(rad>56000)continue;const t=r()*TAU;push(rad*Math.cos(t),rad*Math.sin(t),g()*650,dim.map(c=>c*(.4+.4*r())),.9)}}
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('aColor',new THREE.Float32BufferAttribute(cols,3));geo.setAttribute('aPol',new THREE.Float32BufferAttribute(pol,3));geo.setAttribute('aSize',new THREE.Float32BufferAttribute(sz,1));
- galMat=reg(galL,pmat(1.7,.34,VS_GAL));const pts=new THREE.Points(geo,galMat);pts.frustumCulled=false;galL.q.add(pts);
- const core=new THREE.Sprite(reg(galL,new THREE.SpriteMaterial({map:glowTex,color:0xffd9a8,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}),.35));core.scale.setScalar(16000);galL.q.add(core)}
+ galPoints(pol,cols,sz)}
+/* stars sampled from the NASA map's brightness, so the 3D particles follow the real arms; flat map gives the fine detail */
+fetch('data/mw_pts.bin').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>{const f=new Float32Array(b);const n=f.length/7;const pol=new Float32Array(n*3),cols=new Float32Array(n*3),sz=new Float32Array(n);
+  for(let i=0;i<n;i++){pol[3*i]=f[7*i];pol[3*i+1]=f[7*i+1];pol[3*i+2]=f[7*i+2];cols[3*i]=f[7*i+3];cols[3*i+1]=f[7*i+4];cols[3*i+2]=f[7*i+5];sz[i]=f[7*i+6]}galPoints(pol,cols,sz)}).catch(galProcedural);
+{galPlaneMat=new THREE.ShaderMaterial({uniforms:{uMap:{value:TX('milkyway.jpg')},uOpacity:{value:1}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  vertexShader:LD_V+`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+#include <logdepthbuf_vertex>
+}`,
+  fragmentShader:LD_F+`uniform sampler2D uMap;uniform float uOpacity;varying vec2 vUv;void main(){
+#include <logdepthbuf_fragment>
+vec3 c=texture2D(uMap,vUv).rgb;float m=max(c.r,max(c.g,c.b));float a=smoothstep(0.015,0.32,m);gl_FragColor=vec4(c*0.92,a*uOpacity);}`});
+ galPlaneMat.userData.base=.96;galPlaneMat.userData.u=true;galL.mats.push(galPlaneMat);
+ galPlane=new THREE.Mesh(new THREE.PlaneGeometry(2*GAL_HALF,2*GAL_HALF,1,1),galPlaneMat);galPlane.renderOrder=-1;galL.q.add(galPlane);hdAdd(galPlane,galPlaneMat,'milkyway');
+ const core=new THREE.Sprite(reg(galL,new THREE.SpriteMaterial({map:glowTex,color:0xffe2b8,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}),.08));core.scale.setScalar(12000);galL.q.add(core)}
 
 /* ---------- Local Group ---------- */
 const lgL=layer('lg',LY,A.M_GAL,()=>[0,0,0],s=>win(21.9,24.5,.8,s));
