@@ -68,8 +68,8 @@ function galProcedural(){const pos=[],cols=[],pol=[],sz=[];const r=rng(77),g=()=
   else{const rad=-10000*Math.log(1-r()*.995);if(rad>56000)continue;const t=r()*TAU;push(rad*Math.cos(t),rad*Math.sin(t),g()*650,dim.map(c=>c*(.4+.4*r())),.9)}}
  galPoints(pol,cols,sz)}
 /* stars sampled from the NASA map's brightness, so the 3D particles follow the real arms; flat map gives the fine detail */
-fetch('data/mw_pts.bin').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>{const f=new Float32Array(b);const n=f.length/7;const pol=new Float32Array(n*3),cols=new Float32Array(n*3),sz=new Float32Array(n);
-  for(let i=0;i<n;i++){pol[3*i]=f[7*i];pol[3*i+1]=f[7*i+1];pol[3*i+2]=f[7*i+2];cols[3*i]=f[7*i+3];cols[3*i+1]=f[7*i+4];cols[3*i+2]=f[7*i+5];sz[i]=f[7*i+6]}galPoints(pol,cols,sz)}).catch(galProcedural);
+fetch('data/mw_pts.json').then(r=>{if(!r.ok)throw 0;return r.json()}).then(f=>{const n=f.length/7;const pol=new Float32Array(n*3),cols=new Float32Array(n*3),sz=new Float32Array(n);
+  for(let i=0;i<n;i++){pol[3*i]=f[7*i];pol[3*i+1]=f[7*i+1];pol[3*i+2]=f[7*i+2];cols[3*i]=f[7*i+3]/255;cols[3*i+1]=f[7*i+4]/255;cols[3*i+2]=f[7*i+5]/255;sz[i]=f[7*i+6]}galPoints(pol,cols,sz)}).catch(galProcedural);
 {galPlaneMat=new THREE.ShaderMaterial({uniforms:{uMap:{value:TX('milkyway.jpg')},uOpacity:{value:1}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
   vertexShader:LD_V+`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
 #include <logdepthbuf_vertex>
