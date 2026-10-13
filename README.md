@@ -27,22 +27,30 @@ python3 -m http.server 8000
 ## Project structure
 
 ```
-index.html      built page, ready to serve (GitHub Pages serves this file)
-build.py        assembles index.html from src/
-src/
-  template.html HTML + CSS
-  astro.js      orbital mechanics (Kepler, coordinate frames, GMST)
-  content.js    level and object texts (EN/ID)
-  content2.js   extra sky objects, photos, references
-  moons_snd.js  moon data + sound synthesis
-  extras.js     JPL small bodies, spacecraft, events, UI strings
-  narr.js       documentary narration script
-  learn.js      quiz, glossary, "try this" prompts
-  main.js       3D engine (three.js r128), camera, overlay, UI
-data/ img/ tex/ star catalogue, photos, planet textures
+index.html        page markup; loads the CSS and scripts below (GitHub Pages serves this file)
+css/style.css     all styles
+js/
+  astro.js        orbital mechanics (Kepler, coordinate frames, GMST)
+  content.js      level and object texts (EN/ID)
+  content2.js     extra sky objects, photos, references
+  moons_snd.js    moon data + sound synthesis
+  extras.js       JPL small bodies, spacecraft, events, UI strings
+  narr.js         documentary narration script
+  learn.js        quiz, glossary, "try this" prompts
+  main/           3D engine and UI (three.js r128), split by section:
+    core.js       helpers, language, renderer + bloom, shaders, layers, time
+    solar.js      Sun, planets, moons, satellites, small bodies, spacecraft, Oort cloud
+    deepsky.js    stars, deep-sky objects, Milky Way, Local Group, Laniakea, cosmic web
+    frame.js      category toggles, per-frame positions, label overlay
+    ui.js         HUD, info panel, camera helpers, language apply
+    input.js      pointer/keyboard input, info extras, events timeline, search
+    narration.js  narration engine, deep links, intro
+    tour.js       two-way tour, cinematic, ruler, learning hub, tour player
+    boot.js       data loading and the render loop
+data/ img/ tex/   star catalogue, photos, planet textures
 ```
 
-After editing anything in `src/`, run `python3 build.py` to regenerate `index.html`.
+There is no build step: edit the files and reload. The `js/main/*.js` files are classic scripts that share one global scope, so they must stay in the order listed in `index.html`.
 
 ## Data and image credits
 
