@@ -31,7 +31,7 @@ const controls=new THREE.OrbitControls(camera,cv);
 controls.enableZoom=false;controls.enablePan=false;controls.enableDamping=true;controls.dampingFactor=.08;controls.rotateSpeed=.55;
 camera.position.set(0,.42,1).normalize();
 const root=new THREE.Group();scene.add(root);
-scene.add(new THREE.AmbientLight(0xffffff,.06));
+scene.add(new THREE.AmbientLight(0xffffff,.018));
 const composer=new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(256,256),.8,.55,.6);

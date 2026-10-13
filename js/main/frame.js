@@ -24,14 +24,18 @@ function applyLayers(){k=1/Math.pow(10,s);
   for(const L of layers){const a=L.winFn(s);L.alpha=a;L.g.visible=a>.004;if(!L.g.visible)continue;const o=L.originFn();
     L.g.position.set((o[0]-tgt[0])*k,(o[1]-tgt[1])*k,(o[2]-tgt[2])*k);L.g.scale.setScalar(L.unit*k);
     for(const m of L.mats){const v=m.userData.base*a;if(m.userData.u)m.uniforms.uOpacity.value=v;else m.opacity=v}}}
-const _w=new THREE.Vector3(),_w2=new THREE.Vector3();
+const _w=new THREE.Vector3(),_w2=new THREE.Vector3(),_q=new THREE.Vector3(),_qq=new THREE.Quaternion();
 function animateBodies(){const days=d;
   if(sunL.g.visible)sunMesh.rotation.y=(days*24/PHYS.Matahari.rot)%1*TAU;
   for(const n of PL){const L=bodies[n];if(!L||!L.g.visible)continue;const ph=PHYS[n];
     if(n==='Bumi'){L.mesh.rotation.y=A.gmst(days);L.clouds.rotation.y=(days*.03)%TAU;const mp=A.moonEcl(days);L.moonPivot.position.set(mp[0],mp[1],mp[2]);L.g.getWorldPosition(_w);L.moonPivot.lookAt(_w);
-      sunL.g.getWorldPosition(_w2);earthMat.uniforms.uSun.value.copy(_w2).sub(_w)}
+      sunL.g.getWorldPosition(_w2);earthMat.uniforms.uSun.value.copy(_w2).sub(_w);earthMat.uniforms.uCR.value=L.clouds.rotation.y/TAU}
     else L.mesh.rotation.y=((days*24/ph.rot)%1)*TAU;
-    updateMoonsOf(L,days)}
+    updateMoonsOf(L,days);
+    if(n==='Saturnus'&&L.ring){L.mesh.getWorldPosition(_w);sunL.g.getWorldPosition(_w2);_w2.sub(_w).normalize();_q.set(0,1,0);L.eq.getWorldQuaternion(_qq);_q.applyQuaternion(_qq);
+      for(const m of [satMat,ringMat]){m.uniforms.uSun.value.copy(_w2);m.uniforms.uC.value.copy(_w);m.uniforms.uRN.value.copy(_q);m.uniforms.uKm.value=L.g.scale.x}}}
+  if(sunL.g.visible||true){sunL.g.getWorldPosition(_w2);for(const A_ of ATMOS){if(!A_.L.g.visible)continue;A_.mesh.getWorldPosition(_w);_q.copy(_w2).sub(_w);for(const m of A_.mats)m.uniforms.uSun.value.copy(_q)}}
+  hdTick();
   if(solL.g.visible){propagate(AST,d);AST.attr.needsUpdate=true;propagate(TRO,d);TRO.attr.needsUpdate=true;propagate(KBO,d);KBO.attr.needsUpdate=true}
   if(oortL.g.visible){propagate(OORT,d);OORT.attr.needsUpdate=true}
   if(galL.g.visible){galMat.uniforms.uTime.value=yrs();galMat.uniforms.uTd.value=galTd;galMat.uniforms.uMode.value=galMode}
