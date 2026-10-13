@@ -11,6 +11,22 @@ const PHYS={
  Saturnus:{r:58232,rot:10.656,pole:[40.59,83.54],obl:.09796,tex:'saturn.jpg'},Uranus:{r:25362,rot:-17.24,pole:[257.31,-15.18],obl:.0229,tex:'uranus.jpg'},
  Neptunus:{r:24622,rot:16.11,pole:[299.36,43.46],obl:.0171,tex:'neptune.jpg'},Pluto:{r:1188.3,rot:-153.29,pole:[132.99,-6.16],col:'#cdb79c'},Bulan:{r:1737.4}
 };
+/* ---------- HD textures streamed on demand (level of detail) ---------- */
+const HDN=new Set(['moon','mars','mercury','io','europa','ganymede','callisto','pluto','charon','miranda','ariel','umbriel','titania','oberon','earth']);
+const HDP={Merkurius:'mercury',Mars:'mars',Jupiter:'jupiter',Saturnus:'saturn',Uranus:'uranus',Neptunus:'neptune',Pluto:'pluto'};
+const HDQ=[];let hdTickN=0,hdBusy=0;
+function hdAdd(mesh,mat,key){HDQ.push({mesh,mat,key,done:false})}
+function hdLoad(e){e.done=true;hdBusy++;const ld=f=>new Promise(res=>new THREE.TextureLoader().load('tex/hd/'+f,t=>{t.anisotropy=renderer.capabilities.getMaxAnisotropy();res(t)},undefined,()=>res(null)));
+  const jobs=e.key==='earth'?[ld('earth_day.jpg'),ld('earth_night.jpg'),ld('earth_spec.jpg'),ld('earth_n.jpg')]:[ld(e.key+'.jpg'),HDN.has(e.key)?ld(e.key+'_n.jpg'):Promise.resolve(null)];
+  Promise.all(jobs).then(t=>{hdBusy--;const m=e.mat;
+    if(e.key==='earth'){if(t[0])m.uniforms.uDay.value=t[0];if(t[1])m.uniforms.uNight.value=t[1];if(t[2])m.uniforms.uSpec.value=t[2];if(t[3]){m.uniforms.uNorm.value=t[3];m.uniforms.uHasN.value=1}return}
+    if(m.uniforms&&m.uniforms.uMap){if(t[0])m.uniforms.uMap.value=t[0];return}
+    if(t[0]){m.map=t[0];m.color.set(0xd6d6d6)}if(t[1]){m.normalMap=t[1];m.normalScale=new THREE.Vector2(.9,-.9)}m.needsUpdate=true})}
+const _hv=new THREE.Vector3();
+function hdTick(){if(++hdTickN%15||hdBusy>2)return;const f=H/2/Math.tan(camera.fov/2*DEG);
+  for(const e of HDQ){if(e.done)continue;const ms=e.mesh;let vis=true;for(let o=ms;o;o=o.parent)if(!o.visible){vis=false;break}if(!vis)continue;
+    ms.getWorldPosition(_hv);const dist=_hv.distanceTo(camera.position);if(!ms.geometry.boundingSphere)ms.geometry.computeBoundingSphere();
+    const px=ms.geometry.boundingSphere.radius*ms.matrixWorld.getMaxScaleOnAxis()/Math.max(dist,1e-9)*f;if(px>90){hdLoad(e);if(hdBusy>2)return}}}
 const FOCUS_S={Bulan:6.95,Matahari:9.45,Merkurius:7.3,Venus:7.6,Bumi:7.3,Mars:7.9,Jupiter:9.7,Saturnus:9.95,Uranus:9.35,Neptunus:9.0,Pluto:8.35};
 const MAXA={Bumi:1.6e6,Mars:23463,Jupiter:2.45e7,Saturnus:2.7e7,Uranus:2.05e7,Neptunus:5.1e7,Pluto:64738};
 function poleBasis(name){const p=PHYS[name].pole;const Y=A.eqToEcl(A.sph(p[0],p[1]));let X;
@@ -47,47 +63,89 @@ const sunMesh=new THREE.Mesh(new THREE.SphereGeometry(PHYS.Matahari.r,64,40),sun
 const bodies={};
 function planetLayer(name){const maxA=Math.max(PHYS[name].r*6,MAXA[name]||0);const top=Math.log10(maxA*KM*2)+1.4;
   const L=layer(name,KM,A.M_ECL,()=>POS[name],s=>win(-9,top,.8,s));L.top=top;bodies[name]=L;return L}
-const earthMat=new THREE.ShaderMaterial({uniforms:{uDay:{value:TX('earth_day.jpg')},uNight:{value:TX('earth_night.jpg')},uSpec:{value:TX('earth_spec.jpg')},uSun:{value:new THREE.Vector3(1,0,0)},uOpacity:{value:1}},transparent:true,
+const earthMat=new THREE.ShaderMaterial({uniforms:{uDay:{value:TX('earth_day.jpg')},uNight:{value:TX('earth_night.jpg')},uSpec:{value:TX('earth_spec.jpg')},uNorm:{value:null},uHasN:{value:0},uClouds:{value:TX('earth_clouds.jpg')},uCR:{value:0},uSun:{value:new THREE.Vector3(1,0,0)},uOpacity:{value:1}},transparent:true,
+ vertexShader:LD_V+`varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying vec3 vT;void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);vT=mat3(modelMatrix)*vec3(position.z,0.0,-position.x);vec4 wp=modelMatrix*vec4(position,1.0);vP=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;
+#include <logdepthbuf_vertex>
+}`,
+ fragmentShader:LD_F+`uniform sampler2D uDay,uNight,uSpec,uNorm,uClouds;uniform vec3 uSun;uniform float uOpacity,uHasN,uCR;varying vec2 vUv;varying vec3 vN;varying vec3 vP;varying vec3 vT;
+void main(){
+#include <logdepthbuf_fragment>
+vec3 ng=normalize(vN);vec3 L=normalize(uSun);vec3 V=normalize(cameraPosition-vP);float ndlg=dot(ng,L);
+vec3 day=texture2D(uDay,vUv).rgb;vec3 night=texture2D(uNight,vUv).rgb;float spm=texture2D(uSpec,vUv).r;
+vec3 n=ng;if(uHasN>0.5){vec3 T=normalize(vT-ng*dot(vT,ng)+1e-6);vec3 B=cross(ng,T);vec3 nm=texture2D(uNorm,vUv).xyz*2.0-1.0;n=normalize(mix(ng,normalize(T*nm.x+B*nm.y+ng*nm.z),1.0-spm));}
+float ndl=dot(n,L);float dayK=smoothstep(-0.12,0.2,ndlg);
+float cs=texture2D(uClouds,vUv-vec2(uCR,0.0)).r;float shadow=1.0-0.45*cs*dayK;
+vec3 Hh=normalize(L+V);float nh=max(dot(ng,Hh),0.0);float fres=0.04+0.96*pow(1.0-max(dot(ng,V),0.0),5.0);
+float spec=(pow(nh,160.0)*0.55+pow(nh,24.0)*0.035)*spm*dayK*(0.5+fres)*(1.0-0.85*cs);
+vec3 col=day*(0.012+0.95*pow(max(ndl,0.0),0.85))*shadow+spec*vec3(1.0,0.9,0.75);
+col+=night*vec3(1.0,0.78,0.45)*1.6*(1.0-dayK)*(1.0-0.6*cs);
+float rim=pow(1.0-max(dot(ng,V),0.0),2.5);
+col+=vec3(0.30,0.55,1.0)*rim*0.75*smoothstep(-0.2,0.45,ndlg);
+col+=vec3(1.0,0.45,0.18)*rim*0.45*exp(-pow(ndlg/0.13,2.0));
+col=mix(col,col*vec3(0.92,0.96,1.06)+vec3(0.012,0.02,0.04)*dayK,0.5);
+gl_FragColor=vec4(col,uOpacity);}`});
+earthMat.userData.base=1;earthMat.userData.u=true;
+const ATMOS=[];
+function atmoShell(col,sunset,str,powr,back){const m=new THREE.ShaderMaterial({uniforms:{uOpacity:{value:1},uSun:{value:new THREE.Vector3(1,0,0)},uC:{value:new THREE.Color(col)},uS:{value:new THREE.Color(sunset)},uStr:{value:str},uPow:{value:powr}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:back?THREE.BackSide:THREE.FrontSide,
+ vertexShader:LD_V+`varying vec3 vNw;varying vec3 vPw;void main(){vNw=normalize(mat3(modelMatrix)*normal);vec4 wp=modelMatrix*vec4(position,1.0);vPw=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;
+#include <logdepthbuf_vertex>
+}`,
+ fragmentShader:LD_F+`uniform float uOpacity,uStr,uPow;uniform vec3 uSun,uC,uS;varying vec3 vNw;varying vec3 vPw;void main(){
+#include <logdepthbuf_fragment>
+vec3 n=normalize(vNw);vec3 V=normalize(cameraPosition-vPw);vec3 L=normalize(uSun);float mu=dot(n,V);float ndl=dot(n,L);
+float I=`+(back?`pow(max(0.0,-mu),1.15)*2.4`:`pow(1.0-max(mu,0.0),uPow)`)+`;
+float sun=smoothstep(-0.32,0.4,ndl);vec3 c=mix(uS,uC,smoothstep(-0.05,0.35,ndl));
+gl_FragColor=vec4(c,min(I*sun*uStr,1.0)*uOpacity);}`});m.userData.base=1;m.userData.u=true;return m}
+function addAtmo(L,parent,r,col,sunset,str,thick){const out=atmoShell(col,sunset,str,1.0,true),inn=atmoShell(col,sunset,str*.55,3.0,false);
+  const a=new THREE.Mesh(new THREE.SphereGeometry(r*(1+thick),64,40),out),b=new THREE.Mesh(new THREE.SphereGeometry(r*(1+thick*.25),64,40),inn);parent.add(a);parent.add(b);L.mats.push(out,inn);ATMOS.push({L,mats:[out,inn],mesh:a})}
+const atmoMat=null;
+const RING_U=`uniform vec3 uSun,uC,uRN;uniform float uKm,uR;`;
+const ringMat=new THREE.ShaderMaterial({uniforms:{uTex:{value:TX('saturn_ring.png')},uOpacity:{value:1},uSun:{value:new THREE.Vector3(1,0,0)},uC:{value:new THREE.Vector3()},uRN:{value:new THREE.Vector3(0,1,0)},uKm:{value:1},uR:{value:58232}},transparent:true,side:THREE.DoubleSide,depthWrite:false,
+ vertexShader:LD_V+`varying vec2 vP;varying vec3 vPw;void main(){vP=position.xy;vec4 wp=modelMatrix*vec4(position,1.0);vPw=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;
+#include <logdepthbuf_vertex>
+}`,
+ fragmentShader:LD_F+RING_U+`uniform sampler2D uTex;uniform float uOpacity;varying vec2 vP;varying vec3 vPw;void main(){
+#include <logdepthbuf_fragment>
+float r=length(vP);float u=(r-74500.0)/(140220.0-74500.0);if(u<0.0||u>1.0)discard;vec4 t=texture2D(uTex,vec2(u,0.5));
+vec3 L=normalize(uSun);vec3 D=(vPw-uC)/uKm;float tc=-dot(D,L);float sh=1.0;
+if(tc>0.0){vec3 cl=D+L*tc;float py=dot(cl,uRN);vec3 q=cl-uRN*py+uRN*py/0.902;if(length(q)<uR)sh=0.04;}
+float lit=abs(dot(L,uRN));float side=sign(dot(L,uRN))*sign(dot(cameraPosition-vPw,uRN));
+float b=(0.35+0.65*pow(lit,0.35))*(side>0.0?1.0:0.42);
+gl_FragColor=vec4(t.rgb*1.05*b*sh,t.a*uOpacity*(side>0.0?1.0:0.85));}`});
+ringMat.userData.base=1;ringMat.userData.u=true;
+const satMat=new THREE.ShaderMaterial({uniforms:{uMap:{value:TX('saturn.jpg')},uRing:{value:ringMat.uniforms.uTex.value},uOpacity:{value:1},uSun:{value:new THREE.Vector3(1,0,0)},uC:{value:new THREE.Vector3()},uRN:{value:new THREE.Vector3(0,1,0)},uKm:{value:1},uR:{value:58232}},transparent:true,
+ vertexShader:LD_V+`varying vec2 vUv;varying vec3 vNv;varying vec3 vPw;varying vec3 vVv;void main(){vUv=uv;vNv=normalize(normalMatrix*normal);vec4 wp=modelMatrix*vec4(position,1.0);vPw=wp.xyz;vec4 mv=viewMatrix*wp;vVv=-mv.xyz;gl_Position=projectionMatrix*mv;
+#include <logdepthbuf_vertex>
+}`,
+ fragmentShader:LD_F+RING_U+`uniform sampler2D uMap,uRing;uniform float uOpacity;varying vec2 vUv;varying vec3 vNv;varying vec3 vPw;varying vec3 vVv;void main(){
+#include <logdepthbuf_fragment>
+vec3 L=normalize(uSun);vec3 Lv=normalize((viewMatrix*vec4(L,0.0)).xyz);vec3 n=normalize(vNv);float ndl=max(dot(n,Lv),0.0);float mu=max(dot(n,normalize(vVv)),0.0);
+float sh=1.0;float dn=dot(L,uRN);if(abs(dn)>1e-4){float t=dot(uC-vPw,uRN)/dn;if(t>0.0){vec3 Q=vPw+L*t;float r=length(Q-uC)/uKm;float u=(r-74500.0)/(140220.0-74500.0);if(u>0.0&&u<1.0)sh=1.0-0.88*texture2D(uRing,vec2(u,0.5)).a;}}
+vec3 tex=texture2D(uMap,vUv).rgb;vec3 col=tex*(0.012+1.0*pow(ndl,0.9)*sh)*(0.78+0.22*pow(mu,0.35));
+gl_FragColor=vec4(col,uOpacity);}`});
+satMat.userData.base=1;satMat.userData.u=true;
+const moonTex=TX('moon.jpg');
+const PH=o=>new THREE.MeshPhongMaterial(Object.assign({shininess:1,specular:0x000000,color:0xd6d6d6,transparent:true},o));
+const moonMat=(spec,L)=>reg(L,spec.endsWith('.jpg')?PH({map:TX(spec)}):PH({color:spec}),1);
+for(const name of PL){const L=planetLayer(name);const ph=PHYS[name];
+  const eq=new THREE.Group();eq.quaternion.setFromRotationMatrix(poleBasis(name));L.q.add(eq);L.eq=eq;
+  let mat;if(name==='Bumi'){mat=earthMat;L.mats.push(earthMat)}else if(name==='Saturnus'){mat=satMat;L.mats.push(satMat)}else mat=reg(L,PH({map:TX(ph.tex||'pluto.jpg')}),1);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(ph.r,128,96),mat);mesh.scale.y=1-(ph.obl||0);eq.add(mesh);L.mesh=mesh;if(HDP[name])hdAdd(mesh,mat,HDP[name]);
+  if(name==='Bumi'){const cm=new THREE.ShaderMaterial({uniforms:{uMap:{value:TX('earth_clouds.jpg')},uSun:earthMat.uniforms.uSun,uOpacity:{value:1}},transparent:true,depthWrite:false,
  vertexShader:LD_V+`varying vec2 vUv;varying vec3 vN;varying vec3 vP;void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);vec4 wp=modelMatrix*vec4(position,1.0);vP=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;
 #include <logdepthbuf_vertex>
 }`,
- fragmentShader:LD_F+`uniform sampler2D uDay,uNight,uSpec;uniform vec3 uSun;uniform float uOpacity;varying vec2 vUv;varying vec3 vN;varying vec3 vP;
-void main(){
+ fragmentShader:LD_F+`uniform sampler2D uMap;uniform vec3 uSun;uniform float uOpacity;varying vec2 vUv;varying vec3 vN;varying vec3 vP;void main(){
 #include <logdepthbuf_fragment>
-vec3 n=normalize(vN);vec3 L=normalize(uSun);float ndl=dot(n,L);vec3 V=normalize(cameraPosition-vP);
-vec3 day=texture2D(uDay,vUv).rgb;vec3 night=texture2D(uNight,vUv).rgb;float spm=texture2D(uSpec,vUv).r;
-float dayK=smoothstep(-0.10,0.22,ndl);vec3 Hh=normalize(L+V);float spec=pow(max(dot(n,Hh),0.0),60.0)*spm*0.5*dayK;
-vec3 col=day*(0.015+0.92*pow(max(ndl,0.0),0.9))+spec*vec3(1.0,0.93,0.8)+night*vec3(1.0,0.8,0.5)*1.5*(1.0-dayK);
-float rim=pow(1.0-max(dot(n,V),0.0),3.0);col+=vec3(0.32,0.58,1.0)*rim*0.7*smoothstep(-0.25,0.5,ndl);
-gl_FragColor=vec4(col,uOpacity);}`});
-earthMat.userData.base=1;earthMat.userData.u=true;
-const atmoMat=new THREE.ShaderMaterial({uniforms:{uOpacity:{value:1}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.BackSide,
- vertexShader:LD_V+`varying float vI;void main(){vec3 n=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vI=pow(max(0.0,-dot(n,normalize(-mv.xyz))),1.2)*2.6;gl_Position=projectionMatrix*mv;
-#include <logdepthbuf_vertex>
-}`,
- fragmentShader:LD_F+`uniform float uOpacity;varying float vI;void main(){
-#include <logdepthbuf_fragment>
-gl_FragColor=vec4(0.35,0.62,1.0,min(vI,1.0)*uOpacity);}`});
-atmoMat.userData.base=1;atmoMat.userData.u=true;
-const ringMat=new THREE.ShaderMaterial({uniforms:{uTex:{value:TX('saturn_ring.png')},uOpacity:{value:1}},transparent:true,side:THREE.DoubleSide,depthWrite:false,
- vertexShader:LD_V+`varying vec2 vP;void main(){vP=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-#include <logdepthbuf_vertex>
-}`,
- fragmentShader:LD_F+`uniform sampler2D uTex;uniform float uOpacity;varying vec2 vP;void main(){
-#include <logdepthbuf_fragment>
-float r=length(vP);float u=(r-74500.0)/(140220.0-74500.0);if(u<0.0||u>1.0)discard;vec4 t=texture2D(uTex,vec2(u,0.5));gl_FragColor=vec4(t.rgb*0.95,t.a*uOpacity);}`});
-ringMat.userData.base=1;ringMat.userData.u=true;
-const moonTex=TX('moon.jpg');
-const moonMat=(spec,L)=>reg(L,spec.endsWith('.jpg')?new THREE.MeshLambertMaterial({map:TX(spec),transparent:true}):new THREE.MeshLambertMaterial({color:spec,transparent:true}),1);
-for(const name of PL){const L=planetLayer(name);const ph=PHYS[name];
-  const eq=new THREE.Group();eq.quaternion.setFromRotationMatrix(poleBasis(name));L.q.add(eq);L.eq=eq;
-  let mat;if(name==='Bumi'){mat=earthMat;L.mats.push(earthMat)}else mat=reg(L,ph.tex?new THREE.MeshLambertMaterial({map:TX(ph.tex),transparent:true}):new THREE.MeshLambertMaterial({color:ph.col,transparent:true}),1);
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(ph.r,96,64),mat);mesh.scale.y=1-(ph.obl||0);eq.add(mesh);L.mesh=mesh;
-  if(name==='Bumi'){const cl=new THREE.Mesh(new THREE.SphereGeometry(ph.r*1.008,96,64),reg(L,new THREE.MeshLambertMaterial({color:0xffffff,alphaMap:TX('earth_clouds.jpg'),transparent:true,depthWrite:false}),.75));mesh.add(cl);L.clouds=cl;
-    const atm=new THREE.Mesh(new THREE.SphereGeometry(ph.r*1.045,64,40),atmoMat);L.mats.push(atmoMat);L.q.add(atm);
-    L.moonPivot=new THREE.Group();L.q.add(L.moonPivot);const mm=new THREE.Mesh(new THREE.SphereGeometry(1737.4,64,40),reg(L,new THREE.MeshLambertMaterial({map:moonTex,transparent:true}),1));mm.rotation.y=-Math.PI/2;L.moonPivot.add(mm);L.moon=mm;
+vec3 n=normalize(vN);vec3 L=normalize(uSun);float ndl=dot(n,L);float a=texture2D(uMap,vUv).r;
+float lit=smoothstep(-0.08,0.35,ndl);vec3 c=mix(vec3(1.0,0.55,0.3),vec3(1.0),smoothstep(0.0,0.3,ndl))*(0.03+0.97*lit);
+gl_FragColor=vec4(c,a*0.92*uOpacity);}`});cm.userData.base=.85;cm.userData.u=true;L.mats.push(cm);
+    const cl=new THREE.Mesh(new THREE.SphereGeometry(ph.r*1.006,128,96),cm);mesh.add(cl);L.clouds=cl;
+    addAtmo(L,L.q,ph.r,'#5f9dff','#ff7a3a',1.0,.03);hdAdd(mesh,earthMat,'earth');
+    L.moonPivot=new THREE.Group();L.q.add(L.moonPivot);const mmMat=reg(L,PH({map:moonTex}),1);const mm=new THREE.Mesh(new THREE.SphereGeometry(1737.4,128,96),mmMat);hdAdd(mm,mmMat,'moon');mm.rotation.y=-Math.PI/2;L.moonPivot.add(mm);L.moon=mm;
     const pts=[];for(let k=0;k<=256;k++)pts.push(...A.moonEcl(k/256*27.321661));const og=new THREE.BufferGeometry();og.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));L.q.add(new THREE.Line(og,reg(L,lineMat(0x9cb4d8,.3))))}
-  if(name==='Saturnus'){const ring=new THREE.Mesh(new THREE.RingGeometry(74500,140220,192,1),ringMat);L.mats.push(ringMat);ring.rotation.x=-Math.PI/2;eq.add(ring)}
+  if(name==='Saturnus'){const ring=new THREE.Mesh(new THREE.RingGeometry(74500,140220,256,1),ringMat);L.mats.push(ringMat);ring.rotation.x=-Math.PI/2;ring.renderOrder=3;eq.add(ring);L.ring=ring}
+  const AT={Venus:['#fff1cf','#ffb070',1.1,.04],Mars:['#ffb59a','#ff8a5a',.45,.02],Jupiter:['#e8d6b8','#d99a6a',.35,.012],Saturnus:['#f0e2bf','#d9a46a',.32,.012],Uranus:['#a9e6f0','#7fc4d8',.5,.02],Neptunus:['#7fa6ff','#5d7fe0',.5,.02]}[name];if(AT)addAtmo(L,eq,ph.r,AT[0],AT[1],AT[2],AT[3]);
   L.moons=[];
   for(const m of []){const[mn,a,P,r,spec,inc]=m;const orb=new THREE.Group();if(inc)orb.rotation.x=inc*DEG;eq.add(orb);
     const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,32,20),moonMat(spec,L));orb.add(mesh);
@@ -99,7 +157,7 @@ for(const name of PL){const L=planetLayer(name);const ph=PHYS[name];
 /* ---------- all known moons (data-driven: JPL mean elements + Wikipedia tables) ---------- */
 const MK=window.MOONKIT;for(const k in MK.BODY)CT.BODY[k]=MK.BODY[k];
 const MOONMAP={};const MOONLIST=[];
-const MOONTEX={Io:'io.jpg',Europa:'europa.jpg',Ganymede:'ganymede.jpg',Callisto:'callisto.jpg',Titan:'titan.jpg',Triton:'triton.jpg'};
+const MOONTEX={Io:'io.jpg',Europa:'europa.jpg',Ganymede:'ganymede.jpg',Callisto:'callisto.jpg',Titan:'titan.jpg',Triton:'triton.jpg',Charon:'charon.jpg',Mimas:'mimas.jpg',Enceladus:'enceladus.jpg',Tethys:'tethys.jpg',Dione:'dione.jpg',Rhea:'rhea.jpg',Iapetus:'iapetus.jpg',Miranda:'miranda.jpg',Ariel:'ariel.jpg',Umbriel:'umbriel.jpg',Titania:'titania.jpg',Oberon:'oberon.jpg'};
 const MOONCOL={Enceladus:'#f2f6fa',Mimas:'#c9c6c0',Tethys:'#e6e4df',Dione:'#d9d6d0',Rhea:'#cdc8c0',Iapetus:'#a89a82',Hyperion:'#c2a98a',Phoebe:'#5d5650',Miranda:'#bdbab4',Ariel:'#c9c5bf',Umbriel:'#8a8680',Titania:'#bdb2a6',Oberon:'#a99d92',Charon:'#a59c94',Proteus:'#7d7872',Nereid:'#9a958f',Amalthea:'#b5634a',Phobos:'#8a8178',Deimos:'#9b9084',Janus:'#bdb7ad',Epimetheus:'#bdb7ad',Puck:'#7f7a74',Sycorax:'#a37c66',Himalia:'#8f877d'};
 function moonLocal(m,days,Efix){let E;if(Efix!==undefined&&Efix!==null)E=Efix;else{const M=m.M0+TAU*((days/m.P)%1);E=A.kepler(((M%TAU)+TAU+Math.PI)%TAU-Math.PI,m.e)}
   const xp=m.a*(Math.cos(E)-m.e),yp=m.a*Math.sqrt(1-m.e*m.e)*Math.sin(E);const B=m.B;return[B[0]*xp+B[3]*yp,B[2]*xp+B[5]*yp,-(B[1]*xp+B[4]*yp)]}
@@ -109,8 +167,8 @@ function buildMoons(rows){for(const r of rows){const[pl,name,a,e,i,O,w,M0,P,rad,
     const sp=[],scol=[],segs=[],segsIn=[];L.small=[];
     for(const m of L.ml){const big=m.r>=40||!!MOONTEX[m.name];const n=big?160:64;const pts=[];for(let k=0;k<=n;k++)pts.push(moonLocal(m,0,k/n*TAU));
       if(big){const og=new THREE.BufferGeometry();og.setAttribute('position',new THREE.Float32BufferAttribute(pts.flat(),3));m.lmat=reg(L,lineMat(0x9cb4d8,m.i>90?.2:.28));L.eq.add(new THREE.Line(og,m.lmat));
-        const tex=MOONTEX[m.name];const mat=tex?new THREE.MeshLambertMaterial({map:TX(tex),transparent:true}):new THREE.MeshLambertMaterial({map:moonTex,color:new THREE.Color(MOONCOL[m.name]||'#b9b3aa'),transparent:true});
-        m.mesh=new THREE.Mesh(new THREE.SphereGeometry(m.r,m.r>500?48:24,m.r>500?32:16),reg(L,mat,1));if(m.name==='Hyperion')m.mesh.scale.set(1.3,.85,1);L.eq.add(m.mesh)}
+        const tex=MOONTEX[m.name];const mat=tex?PH({map:TX(tex)}):PH({map:moonTex,color:new THREE.Color(MOONCOL[m.name]||'#b9b3aa')});
+        m.mesh=new THREE.Mesh(new THREE.SphereGeometry(m.r,m.r>500?96:24,m.r>500?64:16),reg(L,mat,1));if(tex)hdAdd(m.mesh,mat,tex.replace('.jpg',''));if(m.name==='Titan')addAtmo(L,m.mesh,m.r,'#e0a050','#b86420',.45,.07);if(m.name==='Hyperion')m.mesh.scale.set(1.3,.85,1);L.eq.add(m.mesh)}
       else{m.si=L.small.length;L.small.push(m);sp.push(0,0,0);scol.push(...(m.i>90?[1,.66,.52]:[.7,.86,1]));const arr=m.a>3e6?segs:segsIn;for(let k=0;k<n;k++)arr.push(...pts[k],...pts[k+1]);if(m.a>3e6)L.outerMinA=Math.min(L.outerMinA||1e12,m.a*(1-m.e))}}
     L.sysA=Math.max(...L.ml.map(m=>m.a));if(L.small.length){L.smallPos=new Float32Array(sp);L.smallMat=reg(L,pmat(1.8,.9));const pc=cloud(L.smallPos,scol,new Array(L.small.length).fill(1),L.smallMat);L.smallAttr=pc.geometry.attributes.position;L.eq.add(pc);
       for(const[arr,op,outer]of[[segs,.08,true],[segsIn,.16,false]]){if(!arr.length)continue;const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));const mt=reg(L,lineMat(0x8fa6c8,op));if(outer)L.outerMat=mt;else L.inMat=mt;const LS=new THREE.LineSegments(sg,mt);LS.frustumCulled=false;L.eq.add(LS)}}}}
