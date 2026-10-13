@@ -96,7 +96,7 @@ function setFold(f){card.classList.toggle('folded',f);$('fold').innerHTML=(f?U()
 let foldPref=null;try{foldPref=localStorage.getItem('tk3d-fold')}catch(e){}
 $('fold').onclick=()=>setFold(!card.classList.contains('folded'));
 function layoutOffset(dt){const c=(info.hidden?card:info).getBoundingClientRect(),sd=side.getBoundingClientRect(),hd=hud.getBoundingClientRect();let tx=0,ty=0;const cine=document.body.classList.contains('cine');
-  if(cine){}else if(W>900){tx=(c.right+12+(W-(sideC?30:sd.width)))/2-W/2}else{const top=Math.max(hd.bottom,sideC?0:sd.bottom)+8;ty=(top+c.top)/2-H/2}
+  if(cine){}else if(W>900){tx=(c.right+12+(W-(sideC?30:sd.width)))/2-W/2}else{const top=Math.max(hd.bottom,sideC?0:sd.bottom)+8;const bot=touring?H-150:c.top;ty=(top+bot)/2-H/2}
   if(skyOn){tx*=.3;ty*=.3}
   const f=Math.min(1,dt*5);offX+=(tx-offX)*f;offY+=(ty-offY)*f;camera.setViewOffset(W,H,-offX,-offY,W,H)}
 

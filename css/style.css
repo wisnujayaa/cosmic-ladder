@@ -234,9 +234,9 @@ kbd{font:700 11px var(--f);letter-spacing:.06em;color:#fff;background:var(--pane
 .subs.out{animation:subOut .4s ease forwards}
 @keyframes subIn{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes subOut{from{opacity:1}to{opacity:0}}
-.subTag{display:inline-block;margin-bottom:6px;font-size:10.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;background:var(--red);padding:3px 8px}
-.subT{margin:0;font-size:clamp(16px,1.45vw,20px);font-weight:500;line-height:1.6;text-wrap:balance}
-.subT .w{color:#fff;background:rgba(5,6,10,.78);padding:3px 0;box-decoration-break:clone;-webkit-box-decoration-break:clone;transition:color .12s}
+.subTag{display:table;margin-left:auto;margin-right:auto;margin-bottom:6px;font-size:10.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;background:var(--red);padding:3px 8px}
+.subT{display:inline;margin:0;font-size:clamp(16px,1.45vw,20px);font-weight:500;line-height:1.75;background:rgba(5,6,10,.8);padding:4px 12px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.subT .w{color:#fff;transition:color .12s}
 .subT.kara .w{color:rgba(255,255,255,.62)}
 .subT.kara .w.said{color:#fff}
 .subT.kara .w.now{color:#fff;text-decoration:underline;text-decoration-color:var(--red);text-decoration-thickness:2px;text-underline-offset:5px}
@@ -277,7 +277,13 @@ body.cine .tbar{display:none!important}
   .try{display:none}
   body:not(.sideC) .search{display:none}
   .narset{display:none}
-  .subs{bottom:auto;top:calc(182px + env(safe-area-inset-top,0px));max-width:calc(100% - 24px)!important;left:50%!important}
-  .tbar{bottom:auto;top:calc(132px + env(safe-area-inset-top,0px));left:50%!important}
-  .subT{font-size:15px}
+  .subs{bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 24px)!important;left:50%!important}
+  .subTag{display:none}
+  .tbar{bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%!important;width:calc(100% - 24px);justify-content:space-between}
+  .tbLab{flex:1;min-width:0;font-size:11.5px;padding:0 8px;text-align:center;max-width:none}
+  .subT{font-size:15px;line-height:1.7;padding:3px 9px}
+  body.touring #card,body.touring .scalebar{display:none!important}
+  .card .eyebrow{font-size:10px;letter-spacing:.1em}
+  .controls .btn{font-size:9.5px;letter-spacing:.07em;padding:7px 8px}
+  .controls{gap:5px}
 }

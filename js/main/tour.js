@@ -63,7 +63,7 @@ function doTry(act){if(!act)return;stopTour();
 $('tryBtn').onclick=()=>doTry(tryAct);
 /* ---- per-frame UI ---- */
 let railCur=-1;
-function updV9(){const i=levelIndex();if(mMode&&s>16.2)setMeasure(false,null,null,true);
+function updV9(){document.body.classList.toggle('touring',touring);const i=levelIndex();if(mMode&&s>16.2)setMeasure(false,null,null,true);
   if(!PROG.lv.includes(i)){PROG.lv.push(i);saveProg()}
   if(railCur!==i){railCur=i;[...$('rail').children].forEach((b,j)=>b.classList.toggle('on',j===i))}
   const tk=i+lang;if(tk!==tryKey){tryKey=tk;const T=LN.TRY[i];tryAct=T?T.act:null;$('tryT').textContent=LU().tryT;$('tryBtn').textContent=T?T.t[lang]:''}
