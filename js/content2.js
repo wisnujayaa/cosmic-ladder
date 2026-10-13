@@ -244,6 +244,7 @@ const NAMES_EN={'Nebula Orion':'Orion Nebula','Nebula Kepala Kuda':'Horsehead Ne
 
 const CREDITS=X([
  'Tekstur Matahari, planet raksasa, dan sebagian satelit: Solar System Scope (solarsystemscope.com), lisensi CC BY 4.0, berbasis data NASA.',
+ 'Peta Bima Sakti tampak atas: NASA/JPL-Caltech/R. Hurt (SSC/Caltech), via paket mw_plot (H. Leung); bintang 3D galaksi diambil sampelnya dari kecerahan peta tersebut.',
  'Tekstur resolusi tinggi (dimuat saat kamu mendekat) dan normal map relief untuk Bulan, Merkurius, Mars, Jupiter, Saturnus, Uranus, Neptunus, Pluto, Charon, satelit Galileo, serta satelit Saturnus dan Uranus: RSS-Textures (KSP-RO, NathanKell dkk.), CC BY-NC-SA, sebagian besar berbasis citra NASA/JPL, Steve Albers, dan Celestia Motherlode. Bumi resolusi tinggi: NASA Blue Marble, Black Marble, dan peta topografi (domain publik), melalui proyek three-globe.',
  'Tekstur planet kebumian: Planet Pixel Emporium (James Hastings-Trew). Lampu malam Bumi: NASA Black Marble. Merkurius: NASA/JHUAPL/Carnegie (MESSENGER). Bulan: NASA SVS.',
  'Foto Olympus Mons, Valles Marineris, Bintik Merah Raksasa, heksagon Saturnus, Bintik Gelap Neptunus, Apollo 11, Kawah Tycho, Perseverance, Curiosity: NASA (domain publik), dikumpulkan dalam proyek kylegough/solar-system di GitHub.',
@@ -254,6 +255,7 @@ const CREDITS=X([
  'Efek suara dibuat langsung di browser dengan Web Audio API, tanpa rekaman.',
  'Orbit planet kerdil dan asteroid: JPL Small-Body Database. Posisi Voyager dan New Horizons diperkirakan dari jarak terbaru di situs NASA; fase ISS, Hubble, GPS, satelit geostasioner, dan orbit halo JWST adalah ilustrasi.'],[
  'Sun, giant-planet and some moon textures: Solar System Scope (solarsystemscope.com), CC BY 4.0, based on NASA data.',
+ 'Face-on Milky Way map: NASA/JPL-Caltech/R. Hurt (SSC/Caltech), via the mw_plot package (H. Leung); the galaxy\'s 3D stars are sampled from that map\'s brightness.',
  'High-resolution textures (loaded as you get close) and relief normal maps for the Moon, Mercury, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Charon, the Galilean moons and the moons of Saturn and Uranus: RSS-Textures (KSP-RO, NathanKell et al.), CC BY-NC-SA, largely based on NASA/JPL imagery, Steve Albers and the Celestia Motherlode. High-resolution Earth: NASA Blue Marble, Black Marble and topography (public domain), via the three-globe project.',
  'Terrestrial planet textures: Planet Pixel Emporium (James Hastings-Trew). Earth night lights: NASA Black Marble. Mercury: NASA/JHUAPL/Carnegie (MESSENGER). Moon: NASA SVS.',
  'Photos of Olympus Mons, Valles Marineris, the Great Red Spot, Saturn’s hexagon, Neptune’s Great Dark Spot, Apollo 11, Tycho Crater, Perseverance and Curiosity: NASA (public domain), collected in the kylegough/solar-system project on GitHub.',
