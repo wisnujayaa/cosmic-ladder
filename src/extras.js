@@ -1,0 +1,136 @@
+window.EXTRAS=(()=>{
+const N='https://science.nasa.gov',W='https://en.wikipedia.org/wiki/';
+const nasa=(p,t)=>[t||'NASA Science',N+p],wiki=(p,t)=>[t||'Wikipedia',W+p];
+const X=(i,e)=>({id:i,en:e});
+/* small bodies: JPL SBDB elements (a AU, e, i, node, w, tp JD) + physical */
+const SB=[
+ // id, kind-key, a, e, i, om, w, tpJD, diam_km, rot_h
+ ['Ceres','dwarf',2.77,.0797,10.6,80.2,73.3,2461599.841,939.4,9.074],
+ ['Vesta','ast',2.36,.0902,7.14,104,151,2460901.587,522.8,5.342],
+ ['Pallas','ast',2.77,.231,34.9,173,311,2461695.031,513,7.813],
+ ['Hygiea','ast',3.15,.107,3.83,283,312,2461813.201,407,13.83],
+ ['Psyche','ast',2.93,.135,3.1,150,230,2460795.475,222,4.196],
+ ['Eros','nea',1.46,.223,10.8,304,179,2461088.813,16.8,5.27],
+ ['Bennu','nea',1.13,.204,6.03,2.06,66.2,2455439.142,.49,4.296],
+ ['Ryugu','nea',1.19,.191,5.87,251,212,2461118.296,.9,7.633],
+ ['Eris','dwarf',67.9,.438,43.9,36,151,2545407.717,2326,25.9],
+ ['Makemake','dwarf',45.6,.159,29,79.3,297,2408158.694,1430,22.83],
+ ['Haumea','dwarf',43.1,.194,28.2,122,241,2500416.6,1560,3.915],
+ ['Sedna','tno',544,.86,11.9,145,311,2479264.751,995,10.27],
+ ['Quaoar','tno',43.2,.0352,7.99,189,163,2480516.376,1110,8.84],
+ ['Gonggong','tno',66.9,.504,30.9,337,207,2399252.657,1230,22.4],
+ ['Orcus','tno',39.4,.221,20.6,268,73.6,2504046.135,910,13.19],
+ ['Arrokoth','tno',44.1,.0356,2.45,159,189,2475741.404,36,15.92],
+ ['Parker Solar Probe','craft',.388,.882,3.4,76.7,150,2460669.0,0,0]
+];
+const KIND={dwarf:X('Planet kerdil','Dwarf planet'),ast:X('Asteroid sabuk utama','Main-belt asteroid'),nea:X('Asteroid dekat Bumi','Near-Earth asteroid'),tno:X('Objek trans-Neptunus','Trans-Neptunian object'),craft:X('Wahana antariksa','Spacecraft'),orbit:X('Wahana di orbit Bumi','Spacecraft in Earth orbit')};
+const I=(fid,fen,did,den,xid,xen,refs)=>({id:{f:fid,d:did,x:xid},en:{f:fen,d:den,x:xen},refs});
+const INFO={
+ Ceres:I([['Jarak rata-rata','2,77 AU'],['Diameter','~939 km'],['Satu tahun','4,6 tahun'],['Satu hari','9,1 jam']],[['Average distance','2.77 AU'],['Diameter','~939 km'],['Year','4.6 years'],['Day','9.1 hours']],
+  'Objek terbesar di sabuk asteroid dan satu-satunya planet kerdil di tata surya bagian dalam. Ceres ditemukan Giuseppe Piazzi pada 1 Januari 1801, dan sempat dianggap planet selama puluhan tahun.','The largest object in the asteroid belt and the only dwarf planet in the inner solar system. Giuseppe Piazzi discovered it on January 1, 1801, and it was considered a planet for decades.',
+  ['Wahana Dawn menemukan endapan garam terang di Kawah Occator, sisa air asin yang merembes dari bawah permukaan.','Ceres menyimpan sekitar sepertiga massa seluruh sabuk asteroid.'],['The Dawn spacecraft found bright salt deposits in Occator Crater, left by briny water seeping up from below.','Ceres holds about a third of the mass of the entire asteroid belt.'],[nasa('/dwarf-planets/ceres/'),nasa('/mission/dawn/','NASA · Dawn')]),
+ Vesta:I([['Jarak rata-rata','2,36 AU'],['Diameter','~525 km'],['Satu hari','5,3 jam']],[['Average distance','2.36 AU'],['Diameter','~525 km'],['Day','5.3 hours']],
+  'Asteroid paling terang dilihat dari Bumi, kadang tampak dengan mata telanjang. Vesta punya lapisan inti, mantel, dan kerak seperti planet kecil yang tidak sempat tumbuh.','The brightest asteroid as seen from Earth, sometimes visible to the naked eye. Vesta has a core, mantle and crust, like a small planet that never finished growing.',
+  ['Kawah Rheasilvia di kutub selatannya selebar hampir 90% diameter Vesta, dengan puncak tengah setinggi ~20 km.','Sebagian meteorit yang jatuh ke Bumi (kelompok HED) berasal dari Vesta.'],['Rheasilvia crater at its south pole spans almost 90% of Vesta’s diameter, with a central peak ~20 km high.','Some meteorites that fall to Earth (the HED group) come from Vesta.'],[nasa('/mission/dawn/','NASA · Dawn'),wiki('4_Vesta')]),
+ Pallas:I([['Jarak rata-rata','2,77 AU'],['Diameter','~513 km'],['Inklinasi','34,9°']],[['Average distance','2.77 AU'],['Diameter','~513 km'],['Inclination','34.9°']],
+  'Asteroid kedua yang ditemukan (1802). Orbitnya sangat miring dibanding asteroid besar lain, sehingga sulit dikunjungi wahana.','The second asteroid discovered (1802). Its orbit is unusually tilted compared with other large asteroids, making it hard for spacecraft to reach.',
+  ['Permukaannya dipenuhi kawah, kemungkinan karena orbitnya yang miring membuat tumbukan terjadi pada kecepatan lebih tinggi.'],['Its surface is heavily cratered, probably because its tilted orbit makes collisions happen at higher speeds.'],[wiki('2_Pallas')]),
+ Hygiea:I([['Jarak rata-rata','3,15 AU'],['Diameter','~410 km']],[['Average distance','3.15 AU'],['Diameter','~410 km']],
+  'Asteroid terbesar keempat. Pengamatan teleskop VLT pada 2019 menunjukkan bentuknya hampir bulat, sehingga ia kandidat planet kerdil.','The fourth-largest asteroid. Observations with the VLT in 2019 showed it is nearly round, making it a dwarf-planet candidate.',
+  ['Hygiea diduga terbentuk kembali dari puing setelah tabrakan besar yang menghancurkan benda induknya.'],['Hygiea may have reassembled from debris after a giant collision shattered its parent body.'],[wiki('10_Hygiea')]),
+ Psyche:I([['Jarak rata-rata','2,93 AU'],['Diameter','~222 km'],['Misi','Psyche (NASA, diluncurkan 2023)']],[['Average distance','2.93 AU'],['Diameter','~222 km'],['Mission','Psyche (NASA, launched 2023)']],
+  'Asteroid yang kaya logam, mungkin inti besi-nikel dari planet kecil yang lapisan luarnya terkelupas oleh tabrakan. Wahana Psyche dijadwalkan tiba pada 2029.','A metal-rich asteroid, possibly the iron-nickel core of a small planet whose outer layers were stripped away by collisions. The Psyche spacecraft is scheduled to arrive in 2029.',
+  ['Mempelajari Psyche bisa memberi gambaran tentang inti Bumi, yang mustahil kita kunjungi.'],['Studying Psyche could offer a glimpse of what Earth’s core is like, a place we can never visit.'],[nasa('/mission/psyche/'),wiki('16_Psyche')]),
+ Eros:I([['Jarak rata-rata','1,46 AU'],['Ukuran','~34 × 11 × 11 km'],['Didarati','NEAR Shoemaker, 2001']],[['Average distance','1.46 AU'],['Size','~34 × 11 × 11 km'],['Landed on by','NEAR Shoemaker, 2001']],
+  'Asteroid dekat Bumi pertama yang ditemukan (1898). Pada 2001, wahana NEAR Shoemaker menjadi wahana pertama yang mendarat di asteroid, di permukaan Eros.','The first near-Earth asteroid discovered (1898). In 2001 the NEAR Shoemaker spacecraft became the first to land on an asteroid, on Eros.',
+  ['NEAR Shoemaker sebenarnya tidak dirancang untuk mendarat, tapi tetap berfungsi setelah menyentuh permukaan.'],['NEAR Shoemaker was not designed to land, yet it kept working after touching down.'],[wiki('433_Eros')]),
+ Bennu:I([['Jarak rata-rata','1,13 AU'],['Diameter','~490 m'],['Sampel','OSIRIS-REx, tiba di Bumi 2023']],[['Average distance','1.13 AU'],['Diameter','~490 m'],['Sample','OSIRIS-REx, returned 2023']],
+  'Asteroid kaya karbon yang sampelnya dibawa pulang wahana OSIRIS-REx pada September 2023. Di dalam sampel itu ditemukan asam amino dan mineral yang terbentuk dengan air.','A carbon-rich asteroid whose sample was brought back by OSIRIS-REx in September 2023. The sample contains amino acids and minerals formed in water.',
+  ['Bennu tergolong asteroid berpotensi berbahaya, dengan peluang sekitar 1 banding 2.700 menabrak Bumi pada tahun 2182.','Permukaannya ternyata seperti kolam bola: lengan pengambil sampel OSIRIS-REx terbenam ke dalam bebatuan lepas.'],['Bennu is classified as potentially hazardous, with about a 1-in-2,700 chance of hitting Earth in 2182.','Its surface behaves like a ball pit: OSIRIS-REx’s sampling arm sank into the loose rubble.'],[nasa('/mission/osiris-rex/','NASA · OSIRIS-REx'),wiki('101955_Bennu')]),
+ Ryugu:I([['Jarak rata-rata','1,19 AU'],['Diameter','~900 m'],['Sampel','Hayabusa2 (JAXA), 2020']],[['Average distance','1.19 AU'],['Diameter','~900 m'],['Sample','Hayabusa2 (JAXA), 2020']],
+  'Asteroid berbentuk gasing yang dikunjungi wahana Jepang Hayabusa2. Wahana itu menembakkan proyektil untuk membuat kawah buatan, lalu membawa pulang sampel ke Bumi pada Desember 2020.','A spinning-top-shaped asteroid visited by Japan’s Hayabusa2, which fired a projectile to make an artificial crater and returned samples to Earth in December 2020.',
+  ['Sampel Ryugu mengandung bahan organik dan ternyata termasuk materi paling purba di tata surya.'],['Ryugu samples contain organic material and turned out to be among the most primitive matter in the solar system.'],[wiki('162173_Ryugu')]),
+ Eris:I([['Jarak rata-rata','67,9 AU'],['Diameter','~2.326 km'],['Satu tahun','~557 tahun'],['Bulan','Dysnomia']],[['Average distance','67.9 AU'],['Diameter','~2,326 km'],['Year','~557 years'],['Moon','Dysnomia']],
+  'Planet kerdil paling masif yang diketahui, sedikit lebih masif dari Pluto. Penemuannya pada 2005 memicu perdebatan yang berujung pada definisi resmi "planet" oleh IAU tahun 2006, yang membuat Pluto menjadi planet kerdil.','The most massive known dwarf planet, slightly more massive than Pluto. Its discovery in 2005 sparked the debate that led to the IAU’s official definition of "planet" in 2006, which reclassified Pluto as a dwarf planet.',
+  ['Saat ini Eris berada sekitar 96 AU dari Matahari, hampir di titik terjauh orbitnya.'],['Eris is currently about 96 AU from the Sun, near the farthest point of its orbit.'],[nasa('/dwarf-planets/eris/'),wiki('Eris_(dwarf_planet)')]),
+ Makemake:I([['Jarak rata-rata','45,6 AU'],['Diameter','~1.430 km'],['Satu tahun','~306 tahun']],[['Average distance','45.6 AU'],['Diameter','~1,430 km'],['Year','~306 years']],
+  'Planet kerdil di Sabuk Kuiper, ditemukan tak lama setelah Paskah 2005 sehingga dinamai menurut dewa pencipta dalam mitologi Rapa Nui (Pulau Paskah).','A Kuiper Belt dwarf planet, found shortly after Easter 2005 and so named after the creator god of Rapa Nui (Easter Island) mythology.',
+  ['Permukaannya tertutup es metana yang membuatnya tampak kemerahan.'],['Its surface is covered in methane ice that gives it a reddish tint.'],[nasa('/dwarf-planets/makemake/'),wiki('Makemake')]),
+ Haumea:I([['Jarak rata-rata','43,1 AU'],['Ukuran','~2.100 × 1.680 × 1.070 km'],['Satu hari','3,9 jam']],[['Average distance','43.1 AU'],['Size','~2,100 × 1,680 × 1,070 km'],['Day','3.9 hours']],
+  'Planet kerdil yang berputar sangat cepat, sekali tiap 3,9 jam, sehingga bentuknya memanjang seperti telur pipih. Haumea juga punya cincin dan dua bulan.','A dwarf planet that spins extremely fast, once every 3.9 hours, stretching it into a flattened egg shape. Haumea also has a ring and two moons.',
+  ['Cincinnya ditemukan pada 2017, saat Haumea melintas di depan sebuah bintang.'],['Its ring was discovered in 2017 when Haumea passed in front of a star.'],[nasa('/dwarf-planets/haumea/'),wiki('Haumea')]),
+ Sedna:I([['Perihelion','~76 AU (tahun 2076)'],['Aphelion','~1.000 AU'],['Satu tahun','~11.000 tahun'],['Diameter','~1.000 km']],[['Perihelion','~76 AU (year 2076)'],['Aphelion','~1,000 AU'],['Year','~11,000 years'],['Diameter','~1,000 km']],
+  'Salah satu benda terjauh yang orbitnya diketahui. Bahkan di titik terdekatnya, Sedna jauh melewati Neptunus, sehingga ia mungkin berasal dari tepi dalam Awan Oort.','One of the most distant objects with a known orbit. Even at its closest, Sedna stays far beyond Neptune, so it may come from the inner edge of the Oort Cloud.',
+  ['Orbit lonjong Sedna sulit dijelaskan; salah satu hipotesisnya adalah tarikan bintang yang pernah lewat dekat Matahari muda.'],['Sedna’s elongated orbit is hard to explain; one idea is the pull of a star that passed close to the young Sun.'],[wiki('90377_Sedna')]),
+ Quaoar:I([['Jarak rata-rata','43,2 AU'],['Diameter','~1.110 km']],[['Average distance','43.2 AU'],['Diameter','~1,110 km']],
+  'Objek Sabuk Kuiper besar dengan cincin yang letaknya mengejutkan, jauh di luar batas tempat cincin biasanya bisa bertahan.','A large Kuiper Belt object with a surprising ring that lies far outside the distance where rings are normally expected to survive.',
+  ['Cincin ini menantang teori tentang bagaimana cincin bisa tetap ada tanpa menggumpal menjadi bulan.'],['This ring challenges theories of how rings can persist without clumping into a moon.'],[wiki('50000_Quaoar')]),
+ Gonggong:I([['Jarak rata-rata','66,9 AU'],['Diameter','~1.230 km']],[['Average distance','66.9 AU'],['Diameter','~1,230 km']],
+  'Objek trans-Neptunus yang dinamai menurut dewa air dalam mitologi Tiongkok. Nama itu dipilih lewat pemungutan suara publik pada 2019.','A trans-Neptunian object named after a water god of Chinese mythology. The name was chosen by a public vote in 2019.',
+  ['Gonggong berputar sangat lambat, sekali tiap sekitar 22 jam, mungkin diperlambat oleh bulannya, Xiangliu.'],['Gonggong spins slowly, about once every 22 hours, perhaps slowed by its moon Xiangliu.'],[wiki('225088_Gonggong')]),
+ Orcus:I([['Jarak rata-rata','39,4 AU'],['Diameter','~910 km']],[['Average distance','39.4 AU'],['Diameter','~910 km']],
+  'Dijuluki "anti-Pluto": orbitnya mirip Pluto dan sama-sama beresonansi 2:3 dengan Neptunus, tapi Orcus selalu berada di sisi berlawanan Matahari dari Pluto.','Nicknamed the "anti-Pluto": its orbit resembles Pluto’s and shares the 2:3 resonance with Neptune, but Orcus is always on the opposite side of the Sun from Pluto.',
+  ['Bulannya, Vanth, cukup besar sehingga keduanya mirip sistem biner seperti Pluto–Charon.'],['Its moon Vanth is large enough that the pair resembles a binary system like Pluto–Charon.'],[wiki('90482_Orcus')]),
+ Arrokoth:I([['Jarak rata-rata','44,1 AU'],['Ukuran','~36 km panjang'],['Dikunjungi','New Horizons, 1 Jan 2019']],[['Average distance','44.1 AU'],['Size','~36 km long'],['Visited by','New Horizons, Jan 1, 2019']],
+  'Benda terjauh yang pernah dikunjungi wahana. Bentuknya seperti dua kue pipih yang menempel lembut, bukti bahwa planetesimal pertama terbentuk dengan cara yang tenang, bukan tabrakan keras.','The most distant object ever visited by a spacecraft. It looks like two flattened lobes gently stuck together, evidence that the first planetesimals formed calmly rather than by violent collisions.',
+  ['Namanya berarti "langit" dalam bahasa Powhatan/Algonquian.'],['Its name means "sky" in the Powhatan/Algonquian language.'],[nasa('/mission/new-horizons/','NASA · New Horizons'),wiki('486958_Arrokoth')]),
+ 'Parker Solar Probe':I([['Perihelion','~6,2 juta km dari Matahari'],['Kecepatan tertinggi','~690.000 km/jam'],['Diluncurkan','12 Agustus 2018']],[['Perihelion','~6.2 million km from the Sun'],['Top speed','~690,000 km/h'],['Launched','August 12, 2018']],
+  'Benda buatan manusia tercepat dan yang paling dekat dengan Matahari. Wahana ini terbang menembus korona untuk mempelajari kenapa korona jauh lebih panas daripada permukaan Matahari. Orbitnya di sini perkiraan.','The fastest human-made object and the one that has flown closest to the Sun. It dives through the corona to study why the corona is far hotter than the Sun’s surface. Its orbit here is approximate.',
+  ['Perisai panasnya menghadapi suhu sekitar 1.400 °C, sementara instrumen di belakangnya tetap mendekati suhu ruangan.'],['Its heat shield faces about 1,400 °C while the instruments behind it stay near room temperature.'],[nasa('/mission/parker-solar-probe/')]),
+ 'Voyager 2':I([['Diluncurkan','20 Agustus 1977'],['Jarak','~145 AU (2026, perkiraan)'],['Melintasi heliopause','5 November 2018']],[['Launched','August 20, 1977'],['Distance','~145 AU (2026, estimated)'],['Crossed the heliopause','November 5, 2018']],
+  'Satu-satunya wahana yang pernah mengunjungi Uranus (1986) dan Neptunus (1989). Kini ia melaju ke ruang antarbintang ke arah langit selatan. Arah dan jaraknya di sini perkiraan.','The only spacecraft to have visited Uranus (1986) and Neptune (1989). It is now heading into interstellar space toward the southern sky. Its direction and distance here are approximate.',
+  ['Voyager 2 diluncurkan 16 hari sebelum Voyager 1, tapi Voyager 1 lebih cepat sehingga lebih dulu sampai ke Jupiter.'],['Voyager 2 launched 16 days before Voyager 1, but Voyager 1 was faster and reached Jupiter first.'],[nasa('/mission/voyager/voyager-2/')]),
+ 'New Horizons':I([['Diluncurkan','19 Januari 2006'],['Jarak','~66 AU (2026, perkiraan)'],['Terbang lintas','Pluto 2015, Arrokoth 2019']],[['Launched','January 19, 2006'],['Distance','~66 AU (2026, estimated)'],['Flybys','Pluto 2015, Arrokoth 2019']],
+  'Wahana yang memberi kita foto close-up pertama Pluto pada Juli 2015, lalu Arrokoth pada 2019. Kini ia terus menjelajahi Sabuk Kuiper. Posisinya di sini perkiraan, dikalibrasi dari data NASA (60 AU pada Oktober 2024).','The spacecraft that gave us the first close-up photos of Pluto in July 2015, then Arrokoth in 2019. It keeps exploring the Kuiper Belt. Its position here is approximate, calibrated from NASA data (60 AU in October 2024).',
+  ['Butuh sekitar 9 tahun untuk sampai ke Pluto, walau ia wahana tercepat saat diluncurkan.'],['It took about 9 years to reach Pluto, even though it was the fastest spacecraft ever launched at the time.'],[nasa('/mission/new-horizons/')]),
+ ISS:I([['Ketinggian','~420 km'],['Satu putaran','~93 menit'],['Kecepatan','~28.000 km/jam']],[['Altitude','~420 km'],['One orbit','~93 minutes'],['Speed','~28,000 km/h']],
+  'Laboratorium terbesar yang pernah dibangun di luar angkasa, dihuni terus-menerus sejak November 2000. Para astronotnya melihat sekitar 16 kali Matahari terbit dalam sehari. Posisinya di orbit di sini ilustrasi.','The largest laboratory ever built in space, continuously inhabited since November 2000. Its crew sees about 16 sunrises a day. Its position along the orbit here is illustrative.',
+  ['ISS bisa dilihat dengan mata telanjang dari Indonesia sebagai titik terang yang bergerak cepat tanpa berkedip.'],['The ISS is visible to the naked eye as a bright, fast-moving dot that does not blink.'],[['NASA · ISS','https://www.nasa.gov/international-space-station/']]),
+ Hubble:I([['Ketinggian','~530 km'],['Diluncurkan','24 April 1990'],['Cermin utama','2,4 m']],[['Altitude','~530 km'],['Launched','April 24, 1990'],['Primary mirror','2.4 m']],
+  'Teleskop antariksa yang mengubah astronomi: membantu mengukur laju pengembangan alam semesta dan memotret galaksi-galaksi terjauh lewat Hubble Deep Field. Posisinya di orbit di sini ilustrasi.','The space telescope that transformed astronomy: it helped measure the expansion rate of the universe and imaged the most distant galaxies in the Hubble Deep Field. Its position along the orbit here is illustrative.',
+  ['Cerminnya awalnya cacat sekitar 1/50 tebal rambut, dan diperbaiki astronot pada 1993 dengan "kacamata" optik.'],['Its mirror was originally flawed by about 1/50 of a hair’s width, fixed by astronauts in 1993 with corrective optics.'],[nasa('/mission/hubble/')]),
+ JWST:I([['Lokasi','titik L2 Matahari–Bumi'],['Jarak dari Bumi','~1,5 juta km'],['Cermin utama','6,5 m (18 segmen)']],[['Location','Sun–Earth L2 point'],['Distance from Earth','~1.5 million km'],['Primary mirror','6.5 m (18 segments)']],
+  'Teleskop inframerah terbesar di luar angkasa. Ia tidak mengorbit Bumi, melainkan mengitari titik L2 yang selalu berada di sisi Bumi yang berlawanan dengan Matahari. Dari sana, perisai mataharinya bisa menghalangi panas Matahari, Bumi, dan Bulan sekaligus. Orbit halonya di sini ilustrasi.','The largest infrared telescope in space. It does not orbit Earth; it circles the L2 point, which always lies on the side of Earth opposite the Sun. From there its sunshield can block heat from the Sun, Earth and Moon at once. Its halo orbit here is illustrative.',
+  ['Perisai mataharinya seukuran lapangan tenis, membuat sisi teleskop tetap di bawah −230 °C.'],['Its sunshield is about the size of a tennis court, keeping the telescope side below −230 °C.'],[nasa('/mission/webb/','NASA · Webb')]),
+ GEO:I([['Ketinggian','35.786 km'],['Periode','1 hari sideris']],[['Altitude','35,786 km'],['Period','1 sidereal day']],
+  'Sabuk orbit geostasioner: satelit di sini mengorbit dengan kecepatan yang sama dengan rotasi Bumi, sehingga tampak diam di langit. Satelit komunikasi dan cuaca, termasuk satelit Indonesia, banyak ditempatkan di sini. Titik-titik di sini ilustrasi.','The geostationary belt: satellites here orbit at the same rate Earth spins, so they appear fixed in the sky. Many communication and weather satellites sit here. The dots are illustrative.',
+  ['Gagasan orbit ini dipopulerkan penulis Arthur C. Clarke pada 1945, sebelum satelit pertama diluncurkan.'],['The idea was popularized by writer Arthur C. Clarke in 1945, before any satellite had been launched.'],[wiki('Geostationary_orbit')]),
+ GPS:I([['Ketinggian','~20.200 km'],['Bidang orbit','6, miring 55°'],['Periode','~12 jam']],[['Altitude','~20,200 km'],['Orbital planes','6, tilted 55°'],['Period','~12 hours']],
+  'Konstelasi satelit navigasi GPS. Ponselmu menghitung posisimu dari selisih waktu sinyal beberapa satelit ini, dengan koreksi relativitas Einstein. Titik-titik di sini ilustrasi.','The GPS navigation constellation. Your phone works out your position from the timing differences of signals from several of these satellites, corrected for Einstein’s relativity. The dots are illustrative.',
+  ['Tanpa koreksi relativitas, posisi GPS akan melenceng sekitar 10 km per hari.'],['Without relativity corrections, GPS positions would drift by about 10 km per day.'],[wiki('Global_Positioning_System')])
+};
+const NAMES_EN={GEO:'Geostationary belt',GPS:'GPS constellation'};
+const NAMES_ID={GEO:'Sabuk geostasioner',GPS:'Konstelasi GPS'};
+const GRAV={Matahari:27.9,Merkurius:.38,Venus:.904,Bumi:1,Bulan:.165,Mars:.379,Jupiter:2.53,Saturnus:1.065,Uranus:.886,Neptunus:1.14,Pluto:.063,Io:.183,Europa:.134,Ganymede:.146,Callisto:.126,Titan:.138,Triton:.08,Ceres:.029,Eris:.084,Enceladus:.0115,Charon:.029};
+/* events: date ISO, focus id, zoom, text */
+const EVENTS=[
+ ['1969-07-20T20:17Z','Bulan',7.2,X('Apollo 11: manusia pertama mendarat di Bulan','Apollo 11: first humans land on the Moon')],
+ ['1977-09-05T12:56Z','Bumi',9.0,X('Voyager 1 diluncurkan','Voyager 1 launches')],
+ ['1994-07-16T20:13Z','Jupiter',8.6,X('Pecahan Komet Shoemaker–Levy 9 mulai menghantam Jupiter','Comet Shoemaker–Levy 9 fragments begin hitting Jupiter')],
+ ['2012-08-25T00:00Z','Matahari',13.9,X('Voyager 1 memasuki ruang antarbintang','Voyager 1 enters interstellar space')],
+ ['2013-02-15T03:20Z','Bumi',7.3,X('Meteor Chelyabinsk meledak di atas Rusia','The Chelyabinsk meteor explodes over Russia')],
+ ['2015-07-14T11:49Z','Pluto',7.6,X('New Horizons terbang melintasi Pluto','New Horizons flies past Pluto')],
+ ['2020-12-21T18:00Z','Matahari',12.5,X('Konjungsi besar: Jupiter dan Saturnus tampak paling berdekatan sejak 1623','Great conjunction: Jupiter and Saturn closest in the sky since 1623')],
+ ['2022-09-26T23:14Z','Bumi',9.6,X('Wahana DART sengaja menabrak asteroid Dimorphos','DART deliberately crashes into asteroid Dimorphos')],
+ ['2025-10-29T12:00Z','Matahari',11.9,X('Komet antarbintang 3I/ATLAS di titik terdekat ke Matahari','Interstellar comet 3I/ATLAS at its closest to the Sun')],
+ ['2026-08-12T17:46Z','Bumi',9.1,X('Gerhana Matahari total (Greenland, Islandia, Spanyol)','Total solar eclipse (Greenland, Iceland, Spain)')],
+ ['2027-02-19T00:00Z','Matahari',11.6,X('Oposisi Mars: Mars dan Matahari berseberangan dilihat dari Bumi','Mars opposition: Mars opposite the Sun as seen from Earth')],
+ ['2027-08-02T10:07Z','Bumi',9.1,X('Gerhana Matahari total terpanjang abad ini di daratan (Afrika Utara, Timur Tengah)','Longest total solar eclipse over land this century (North Africa, Middle East)')],
+ ['2029-04-13T21:46Z','Bumi',8.3,X('Asteroid Apophis melintas ~32.000 km dari permukaan Bumi','Asteroid Apophis passes ~32,000 km above Earth’s surface')],
+ ['2032-11-13T08:54Z','Matahari',11.6,X('Transit Merkurius: Merkurius melintas di depan Matahari','Transit of Mercury across the Sun')],
+ ['2061-07-28T00:00Z','Matahari',12.2,X('Komet Halley kembali ke titik terdekat ke Matahari','Halley’s Comet returns to perihelion')]
+];
+const UI={
+ id:{search:'Cari objek… (mis. Titan, Orion, Bennu)',noRes:'Tidak ditemukan',events:'Peristiwa',eventsTitle:'Linimasa peristiwa',eventsKind:'Lompat waktu',narr:'Narasi',narrOn:'Narasi suara aktif saat tur',narrOff:'Narasi suara mati',
+  size:'Perbandingan ukuran',earth:'Bumi',weight:'Berat badanmu di sana',weightIn:'Massa tubuhmu (kg)',weightOut:(w,g)=>`Timbangan akan menunjukkan sekitar ${w} kg (gravitasi ${g}× Bumi)`,
+  distNow:'Jarak dari Bumi saat ini',lightNow:'Cahaya dari sana butuh',marble:x=>`Jika Bumi sebesar kelereng 1 cm, lebar layar ≈ ${x}`,
+  introTitle:'Cosmic Ladder',introSub:'Perjalanan dari Bumi sampai tepi alam semesta teramati, sekitar 20 lompatan skala dengan data sungguhan.',introTour:'Mulai tur bersuara',introFree:'Jelajahi sendiri',introNote:'Headphone disarankan. Seret untuk memutar, scroll untuk zoom, klik nama objek untuk membaca penjelasannya.',
+  cat:{planet:'Planet',moon:'Satelit',star:'Bintang',con:'Rasi',obj:'Objek',term:'Istilah'}},
+ en:{search:'Search… (e.g. Titan, Orion, Bennu)',noRes:'No matches',events:'Events',eventsTitle:'Event timeline',eventsKind:'Time travel',narr:'Narration',narrOn:'Voice narration on during the tour',narrOff:'Voice narration off',
+  size:'Size comparison',earth:'Earth',weight:'Your weight there',weightIn:'Your body mass (kg)',weightOut:(w,g)=>`A scale would read about ${w} kg (gravity ${g}× Earth’s)`,
+  distNow:'Distance from Earth now',lightNow:'Light from there takes',marble:x=>`If Earth were a 1 cm marble, the screen would be ≈ ${x} wide`,
+  introTitle:'Cosmic Ladder',introSub:'A journey from Earth to the edge of the observable universe, about 20 jumps in scale, built on real data.',introTour:'Start the guided tour',introFree:'Explore on my own',introNote:'Headphones recommended. Drag to rotate, scroll to zoom, click any name to read about it.',
+  cat:{planet:'Planet',moon:'Moon',star:'Star',con:'Constellation',obj:'Object',term:'Term'}}
+};
+return{SB,KIND,INFO,NAMES_EN,NAMES_ID,GRAV,EVENTS,UI};
+})();
