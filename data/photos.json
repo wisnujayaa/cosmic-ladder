@@ -1,0 +1,222 @@
+{
+"m1": {
+"w": 0.1358,
+"h": 0.1352,
+"credit": "Stephane Dumont",
+"ra": 83.63,
+"dec": 22.018,
+"px": [
+512,
+512
+]
+},
+"m8": {
+"w": 2.4035,
+"h": 2.4032,
+"credit": "Dylan O'Donnell",
+"ra": 271.536,
+"dec": -24.074,
+"px": [
+768,
+768
+]
+},
+"m13": {
+"w": 0.4462,
+"h": 0.4468,
+"credit": "Starhopper",
+"ra": 250.42,
+"dec": 36.46,
+"px": [
+768,
+768
+]
+},
+"m16": {
+"w": 1.4595,
+"h": 1.4606,
+"credit": "Sun Gang",
+"ra": 274.735,
+"dec": -13.806,
+"px": [
+768,
+768
+]
+},
+"m20": {
+"w": 0.5465,
+"h": 0.5466,
+"credit": "Hewholooks",
+"ra": 270.599,
+"dec": -22.974,
+"px": [
+512,
+512
+]
+},
+"m27": {
+"w": 0.1391,
+"h": 0.1389,
+"credit": "Stephane Dumont",
+"ra": 299.901,
+"dec": 22.722,
+"px": [
+512,
+512
+]
+},
+"m31": {
+"w": 2.8296,
+"h": 2.8294,
+"credit": "LEE ang HG731GZ",
+"ra": 10.707,
+"dec": 41.16,
+"px": [
+768,
+768
+]
+},
+"m33": {
+"w": 1.2892,
+"h": 1.2892,
+"credit": "HG731GZ",
+"ra": 23.483,
+"dec": 30.66,
+"px": [
+768,
+768
+]
+},
+"m42": {
+"w": 3.2196,
+"h": 3.2164,
+"credit": "HG731GZ",
+"ra": 84.273,
+"dec": -5.726,
+"px": [
+768,
+768
+]
+},
+"m44": {
+"w": 1.1571,
+"h": 1.1566,
+"credit": "Giuseppe Donatiello",
+"ra": 129.967,
+"dec": 19.629,
+"px": [
+512,
+512
+]
+},
+"m45": {
+"w": 1.5085,
+"h": 1.5084,
+"credit": "HG731GZ",
+"ra": 56.66,
+"dec": 24.114,
+"px": [
+768,
+768
+]
+},
+"m51": {
+"w": 0.3822,
+"h": 0.3824,
+"credit": "Plover Hill Observatory",
+"ra": 202.484,
+"dec": 47.227,
+"px": [
+768,
+768
+]
+},
+"m57": {
+"w": 0.0498,
+"h": 0.0502,
+"credit": "Stephane Dumont",
+"ra": 283.396,
+"dec": 33.028,
+"px": [
+256,
+256
+]
+},
+"m104": {
+"w": 0.2589,
+"h": 0.2587,
+"credit": "Adam Block/Mount Lemmon SkyCenter/University of Arizona & Ngc1535, post-processing: Sun Shuwei",
+"ra": 189.997,
+"dec": -11.629,
+"px": [
+256,
+256
+]
+},
+"ic434": {
+"w": 2.4345,
+"h": 2.438,
+"credit": "Manuel Peitsch, post-processing: Sun Shuwei",
+"ra": 84.706,
+"dec": -2.546,
+"px": [
+768,
+768
+]
+},
+"lmc": {
+"w": 1.9349,
+"h": 1.9426,
+"credit": "ESO/R. Gendler and Sun Shuwei",
+"ra": 87.603,
+"dec": -65.731,
+"px": [
+512,
+512
+]
+},
+"smc": {
+"w": 2.545,
+"h": 2.5433,
+"credit": "Dylan O'Donnell",
+"ra": 13.596,
+"dec": -72.482,
+"px": [
+768,
+768
+]
+},
+"casa": {
+"w": 0.1308,
+"h": 0.1308,
+"credit": "Adam Block/Mount Lemmon SkyCenter/University of Arizona",
+"ra": 350.844,
+"dec": 58.815,
+"px": [
+256,
+256
+]
+},
+"carina": {
+"w": 2.9608,
+"h": 2.959,
+"credit": "Harel Boren",
+"ra": 160.929,
+"dec": -59.821,
+"px": [
+768,
+768
+]
+},
+"velasnr": {
+"w": 4.5473,
+"h": 4.5471,
+"credit": "Manuel Peitsch, post-processing: Sun Shuwei",
+"ra": 133.072,
+"dec": -44.282,
+"px": [
+768,
+768
+]
+}
+}
