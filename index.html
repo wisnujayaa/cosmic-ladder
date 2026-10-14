@@ -39,7 +39,7 @@
       <button class="btn" id="ccBtn" type="button" aria-pressed="true"></button>
       <button class="btn" id="evBtn" type="button"></button>
     </div>
-    <div class="narset"><div class="lab" data-k6="voice"></div><div class="vrow"><select id="voiceSel"></select><button class="btn" id="voiceTest" type="button"></button></div><p class="vnote" id="voiceNote" hidden></p><label class="lab" for="rateIn"><span data-k6="rate"></span> · <b id="rateV"></b></label><input id="rateIn" type="range" min="0.75" max="1.4" step="0.05" value="1"></div>
+    <div class="narset"><div class="lab" data-k6="style"></div><div class="vrow"><select id="nStyle"><option value="doc" data-k6="sDoc"></option><option value="poem" data-k6="sPoem"></option></select><button class="btn primary" id="recBtn" type="button" data-k6="rec"></button></div><div class="lab" data-k6="voice"></div><div class="vrow"><select id="voiceSel"></select><button class="btn" id="voiceTest" type="button"></button></div><p class="vnote" id="voiceNote" hidden></p><label class="lab" for="rateIn"><span data-k6="rate"></span> · <b id="rateV"></b></label><input id="rateIn" type="range" min="0.75" max="1.4" step="0.05" value="1"></div>
     <label class="speed lab" for="mul" data-k="speed"></label>
     <input class="speed" id="mul" type="range" min="-3" max="3" step="0.01" value="0">
     <div class="lab hideS" data-k="focus"></div>
@@ -94,7 +94,7 @@
   <div class="brand"><i></i><span data-k="brand"></span></div>
   <h1 id="introT" data-k4="introTitle"></h1>
   <p class="lede" data-k4="introSub"></p>
-  <div class="row"><button class="btn primary" id="introTour" type="button" data-k4="introTour"></button><button class="btn" id="introBack" type="button"></button><button class="btn" id="introFree" type="button" data-k4="introFree"></button><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="id">ID</button><button type="button" data-lang="en">EN</button></div></div>
+  <div class="row"><button class="btn primary" id="introTour" type="button" data-k4="introTour"></button><button class="btn" id="introBack" type="button"></button><button class="btn" id="introRec" type="button" data-k6="rec"></button><button class="btn" id="introFree" type="button" data-k4="introFree"></button><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="id">ID</button><button type="button" data-lang="en">EN</button></div></div>
   <p class="inote" data-k4="introNote"></p>
 </div></section>
 <div class="subs" id="subs" hidden aria-live="polite"><div class="subTag" id="subTag"></div><p class="subT" id="subT"></p></div>

@@ -18,7 +18,7 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   else if(touring&&tourPaused){}
   else if(touring){let dd=9;for(const Lv of LV)dd=Math.min(dd,Math.abs(Lv.f-target));const v=(tourHold&&dd<.06)?0:.16+.8*ss(.15,.9,dd);target=clamp(target+tourDir*v*dt);
     if(tourDir>0&&target>=27){target=27;stopTour();MK.chime();tourEnd(1)}else if(tourDir<0&&target<=LV[0].f){target=LV[0].f;stopTour();MK.chime();tourEnd(-1)}
-    const li=levelIndex();if(touring&&li!==tourLvl){if(tourLvl>=0)MK.whoosh(.9,tourDir<0);tourLvl=li;banner(li);narrate(levelLines(li,tourDir,tourFirst),{hold:true,tag:`10^${Math.round(LV[li].f)} m · ${LV[li][lang].name}`});tourFirst=false}}else if(!touring)tourLvl=-1;
+    const li=levelIndex();if(touring&&li!==tourLvl){if(tourLvl>=0)MK.whoosh(.9,tourDir<0);tourLvl=li;banner(li);narrate(levelLines(li,tourDir,tourFirst),{hold:true,poem:poemOn(tourDir),tag:poemOn(tourDir)?'Cosmic Ladder':`10^${Math.round(LV[li].f)} m · ${LV[li][lang].name}`});tourFirst=false}}else if(!touring)tourLvl=-1;
   const fo=isPlanet(focus)?null:focusObj(focus);const minS=fo?fo.minS:Math.log10((PHYS[focus]?PHYS[focus].r:6371)*KM*2.3);if(target<minS)target=minS;
   if(skyOn&&(target>19.7||target<16.7)){setSky(false,true)}
   const sPrev=s;const pl0=len(pan);const tEff=(panDecay&&pl0>0)?Math.max(target,Math.log10(pl0*2.2)):target;s+=(tEff-s)*Math.min(1,dt*(tEff>target+.05?3.5:6));
