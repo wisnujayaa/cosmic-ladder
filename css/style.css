@@ -290,3 +290,11 @@ body.cine .tbar{display:none!important}
   .controls .btn{font-size:9.5px;letter-spacing:.07em;padding:7px 8px}
   .controls{gap:5px}
 }
+/* quiz modes, difficulty, review */
+.qscope{flex-wrap:wrap;gap:6px}
+.qscope .btn{flex:1 1 auto;min-width:0}
+.qmeta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px}
+.qdiff{letter-spacing:.08em;font-weight:600;white-space:nowrap;color:var(--muted)}
+.qdiff.d2{color:#f3c76b}.qdiff.d3{color:#ff7a5c}
+.qrev-h{margin-top:18px}
+.gcount{margin:6px 0 2px;font-size:12px;color:var(--muted)}

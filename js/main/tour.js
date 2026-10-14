@@ -61,7 +61,7 @@ function doTry(act){if(!act)return;stopTour();
   else if(act.startsWith('g:')){glOpen=act.slice(2);openHub('gloss')}
   else if(act==='sky'){if(!skyOn){recenter();setSky(true)}}
   else if(act==='gmode'){if(!galMode)$('gmode').click()}
-  else if(act==='quiz'){newQuiz('all');openHub('quiz')}}
+  else if(act==='quiz'){newQuiz('q10');openHub('quiz')}}
 $('tryBtn').onclick=()=>doTry(tryAct);
 /* ---- per-frame UI ---- */
 let railCur=-1;
@@ -83,24 +83,32 @@ function openHub(tab,keep){if(tab)hubTab=tab;infoId='__hub';$('inListen').hidden
   box.appendChild(tabs);const body=mk('div','hubb');box.appendChild(body);({quiz:renderQuiz,gloss:renderGloss,prog:renderProg,keys:renderKeys})[hubTab](body);
   info.hidden=false;card.hidden=true;info.scrollTop=keep?st:0;stopTour();setHash(null)}
 function goTo(g){if(!g)return;if(g.id){try{flyTo(g.id)}catch(e){}}else{setSky(false,true);if(focus!=='Bumi')switchFocus('Bumi');recenter();anchor=null;target=g.s;banner(nearestLv(g.s))}if(innerWidth<=900)closeInfo()}
-function newQuiz(scope){const li=levelIndex();let idx=LN.QUIZ.map((q,i)=>i);if(scope==='lv'){let f=idx.filter(i=>LN.QUIZ[i].lv===li);if(f.length<2)f=idx.filter(i=>Math.abs(LN.QUIZ[i].lv-li)<=1);idx=f}QZ={scope,list:shuf(idx),i:0,c:0,ans:null,perm:null}}
-function renderQuiz(box){if(!QZ)newQuiz('all');const l=LU();const n=QZ.list.length;
-  const sc=mk('div','row qscope');for(const k of['all','lv']){const b=mk('button','btn'+(QZ.scope===k?' on':''),k==='all'?l.allQ:l.levelQ);b.type='button';b.onclick=()=>{newQuiz(k);openHub('quiz',true)};sc.appendChild(b)}box.appendChild(sc);
+const QDIF=q=>q.d||1;
+function newQuiz(scope){const li=levelIndex();let idx=LN.QUIZ.map((q,i)=>i);
+  if(scope==='lv'){let f=idx.filter(i=>LN.QUIZ[i].lv===li);if(f.length<2)f=idx.filter(i=>Math.abs(LN.QUIZ[i].lv-li)<=1);idx=shuf(f)}
+  else if(scope==='hard')idx=shuf(idx.filter(i=>QDIF(LN.QUIZ[i])===3)).slice(0,15);
+  else if(scope==='q10'){/* one question from 10 different levels where possible, mixed difficulty */const by={};for(const i of shuf(idx))(by[LN.QUIZ[i].lv]=by[LN.QUIZ[i].lv]||[]).push(i);const lvs=shuf(Object.keys(by));const out=[];let r=0;while(out.length<10&&r<20){for(const k of lvs){if(out.length>=10)break;if(by[k][r]!==undefined)out.push(by[k][r])}r++}idx=out}
+  else idx=shuf(idx);
+  QZ={scope,list:idx,i:0,c:0,ans:null,perm:null,miss:[]}}
+function renderQuiz(box){if(!QZ)newQuiz('q10');const l=LU();const n=QZ.list.length;
+  const sc=mk('div','row qscope');for(const k of['q10','hard','lv','all']){const b=mk('button','btn'+(QZ.scope===k?' on':''),{q10:l.q10,hard:l.hardQ,lv:l.levelQ,all:l.allQ(LN.QUIZ.length)}[k]);b.type='button';b.onclick=()=>{newQuiz(k);openHub('quiz',true)};sc.appendChild(b)}box.appendChild(sc);
   const head=mk('div','qhead');head.append(mk('span','',l.qOf(Math.min(QZ.i+1,n),n)),mk('span','',l.score(QZ.c,n)));box.appendChild(head);
   const bar=mk('div','pbar');const bi=document.createElement('i');bi.style.width=(100*Math.min(QZ.i+(QZ.ans!==null?1:0),n)/n)+'%';bar.appendChild(bi);box.appendChild(bar);
-  if(QZ.i>=n){const p=QZ.c/n;const pc=Math.round(100*p);if(pc>PROG.best){PROG.best=pc;saveProg()}box.appendChild(mk('p','qq',l.done(QZ.c,n)));box.appendChild(mk('p','desc',l.doneMsg(p)));const b=mk('button','btn primary',l.again);b.type='button';b.onclick=()=>{newQuiz(QZ.scope);openHub('quiz',true)};box.appendChild(b);return}
+  if(QZ.i>=n){const p=QZ.c/n;const pc=Math.round(100*p);if(n>=10&&pc>PROG.best){PROG.best=pc;saveProg()}box.appendChild(mk('p','qq',l.done(QZ.c,n)));box.appendChild(mk('p','desc',l.doneMsg(p)));const b=mk('button','btn primary',l.again);b.type='button';b.onclick=()=>{newQuiz(QZ.scope);openHub('quiz',true)};box.appendChild(b);
+    if(QZ.miss.length){box.appendChild(mk('p','eyebrow qrev-h',l.review(QZ.miss.length)));for(const mi of QZ.miss){const mq=LN.QUIZ[mi];const det=document.createElement('details');det.className='gl';det.appendChild(mk('summary','',mq.q[lang]));const dv=mk('div','gld');const ans=mk('p','glex');ans.append(mk('b','',l.answer+': '),document.createTextNode(mq.o[mq.a][lang]));dv.append(ans,mk('p','',mq.e[lang]));const g=mk('button','btn',l.see+' →');g.type='button';g.onclick=()=>goTo(mq.go);dv.appendChild(g);det.appendChild(dv);box.appendChild(det)}}
+    return}
   const q=LN.QUIZ[QZ.list[QZ.i]];if(!QZ.perm)QZ.perm=shuf(q.o.map((x,i)=>i));
-  const lvl=mk('p','eyebrow',`${l.lvIdx} · 10^${Math.round(LV[q.lv].f)} · ${LV[q.lv][lang].name}`);box.appendChild(lvl);box.appendChild(mk('p','qq',q.q[lang]));
+  const dq=QDIF(q);const lvl=mk('p','eyebrow qmeta');lvl.append(document.createTextNode(`${l.lvIdx} · 10^${Math.round(LV[q.lv].f)} · ${LV[q.lv][lang].name}`),mk('span','qdiff d'+dq,'●'.repeat(dq)+'○'.repeat(3-dq)+' '+l.diff[dq-1]));box.appendChild(lvl);box.appendChild(mk('p','qq',q.q[lang]));
   const ol=mk('div','qopts');const letters='ABCD';QZ.perm.forEach((pi,j)=>{const b=mk('button','qopt');b.type='button';b.append(mk('span','ql',letters[j]),mk('span','',q.o[pi][lang]));
     if(QZ.ans!==null){b.disabled=true;if(pi===q.a)b.classList.add('ok');else if(pi===QZ.ans)b.classList.add('bad')}
-    b.onclick=()=>{if(QZ.ans!==null)return;QZ.ans=pi;if(pi===q.a){QZ.c++;try{MK.chime()}catch(e){}}openHub('quiz',true)};ol.appendChild(b)});box.appendChild(ol);
+    b.onclick=()=>{if(QZ.ans!==null)return;QZ.ans=pi;if(pi===q.a){QZ.c++;try{MK.chime()}catch(e){}}else QZ.miss.push(QZ.list[QZ.i]);openHub('quiz',true)};ol.appendChild(b)});box.appendChild(ol);
   if(QZ.ans!==null){const ok=QZ.ans===q.a;box.appendChild(mk('p','qv '+(ok?'ok':'bad'),ok?l.right:l.wrong));box.appendChild(mk('p','desc',q.e[lang]));
     const row=mk('div','row');const g=mk('button','btn',l.see+' →');g.type='button';g.onclick=()=>goTo(q.go);const nx=mk('button','btn primary',l.next);nx.type='button';nx.onclick=()=>{QZ.i++;QZ.ans=null;QZ.perm=null;openHub('quiz',true)};row.append(nx,g);box.appendChild(row);setTimeout(()=>nx.focus({preventScroll:true}),30)}}
 function renderGloss(box){const l=LU();const inp=mk('input','gfilter');inp.type='search';inp.placeholder=l.glFilter;inp.setAttribute('aria-label',l.glFilter);const list=mk('div','gl-list');const want=glOpen;
-  const draw=()=>{list.textContent='';const q=norm(inp.value.trim());for(const g of LN.GLOSS){const t=g.t[lang];if(q&&!norm(t+' '+g.d[lang]).includes(q))continue;const det=document.createElement('details');det.className='gl';if(want===g.k)det.open=true;
+  const draw=()=>{list.textContent='';const q=norm(inp.value.trim());for(const g of [...LN.GLOSS].sort((x,y)=>x.t[lang].localeCompare(y.t[lang],lang))){const t=g.t[lang];if(q&&!norm(t+' '+g.d[lang]).includes(q))continue;const det=document.createElement('details');det.className='gl';if(want===g.k)det.open=true;
     det.appendChild(mk('summary','',t));const dv=mk('div','gld');dv.appendChild(mk('p','',g.d[lang]));const ex=mk('p','glex');ex.append(mk('b','',l.example+': '),document.createTextNode(g.ex[lang]));dv.appendChild(ex);
     if(g.go){const bt=mk('button','btn',l.see+' →');bt.type='button';bt.onclick=()=>goTo(g.go);dv.appendChild(bt)}det.appendChild(dv);list.appendChild(det);if(want===g.k)setTimeout(()=>det.scrollIntoView({block:'start'}),60)}};
-  inp.addEventListener('input',draw);box.append(inp,list);draw();glOpen=null}
+  inp.addEventListener('input',draw);box.append(inp,mk('p','gcount',l.glCount(LN.GLOSS.length)),list);draw();glOpen=null}
 function renderProg(box){const l=LU();if(!SIDX)buildIdx();
   const row=(lab,val,frac)=>{const d=mk('div','prow');const h=mk('div','qhead');h.append(mk('span','',lab),mk('b','',val));const bar=mk('div','pbar');const i=document.createElement('i');i.style.width=(100*Math.min(1,frac)).toFixed(0)+'%';bar.appendChild(i);d.append(h,bar);return d};
   box.appendChild(row(l.progLv,`${PROG.lv.length}/${LV.length}`,PROG.lv.length/LV.length));
