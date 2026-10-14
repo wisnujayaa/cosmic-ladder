@@ -11,7 +11,8 @@ An interactive 3D journey from Earth to the edge of the observable universe and 
 - **NASA-style realism**: 4K textures streamed on demand as you approach a world, relief normal maps, Earth with moving cloud shadows, ocean sun glint, city lights and a sunset-coloured terminator, sun-aware atmospheres (Venus, Mars, Titan, giant planets), and Saturn's rings and globe casting shadows on each other. At galaxy scale, NASA's face-on Milky Way map is combined with 42,000 3D stars sampled from it.
 - **Real sky**: HYG star catalogue, Stellarium constellation lines, and nebula and galaxy photos.
 - **Two-way guided tour** (Earth → Universe, Universe → Earth) with documentary narration, subtitles and a chapter player (pause, replay, skip).
-- **Learning hub**: 27-question quiz, 25-term glossary, progress tracking and keyboard shortcuts.
+- **Learning hub**: 140-question quiz with difficulty levels, 71-term glossary, progress tracking and keyboard shortcuts.
+- **OSN Astronomy Academy** (`osn.html`): an Indonesian-language study site for the national astronomy olympiad (OSN SMA). It has 13 chapters following the IOAA-based syllabus, 13 interactive labs, generated concept diagrams, 122 practice problems with worked solutions (multiple choice, numeric and essay), a retry-missed-questions list, timed mixed practice sets, a constants table, and reference links in every section (OpenStax, NAAP, Wikipedia).
 - **Tools**: scale bar, distance ruler (distance, light time, travel time), weight calculator, size comparison, events timeline and object search.
 - **Sound** is synthesised live with the Web Audio API; narration uses the Web Speech API.
 - Cinematic mode, a collapsible side panel and a responsive mobile layout.
