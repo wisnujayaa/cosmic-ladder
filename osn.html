@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OSN Astronomy Academy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Materi, lab interaktif, dan latihan soal fisika-astronomi untuk persiapan OSN Astronomi SMA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/osn.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' },
+  startup: { typeset: false, pageReady: function () { return MathJax.startup.defaultPageReady().then(function () { if (window.__mjReady) window.__mjReady(); }); } }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <button class="iconbtn" id="navBtn" type="button" aria-label="Daftar bab" aria-controls="nav">☰</button>
+  <a class="brand" href="#beranda"><i aria-hidden="true"></i>OSN Astronomy Academy</a>
+  <span class="spacer"></span>
+  <button class="btn small ghost" id="themeBtn" type="button">Tema</button>
+  <a class="btn small" href="index.html">Cosmic Ladder 3D ↗</a>
+</header>
+<div class="layout">
+  <nav class="side" id="nav" aria-label="Navigasi bab"></nav>
+  <main class="main" id="main"><p class="note">Memuat materi…</p></main>
+</div>
+<script src="js/osn/core.js"></script>
+<script src="js/osn/figs.js"></script>
+<script src="js/osn/ch-a.js"></script>
+<script src="js/osn/ch-b.js"></script>
+<script src="js/osn/ch-c.js"></script>
+<script src="js/osn/labs.js"></script>
+<script src="js/osn/app.js"></script>
+</body>
+</html>
