@@ -30,11 +30,28 @@ const T={
  en:{startO:'Welcome to the Cosmic Ladder. With every step, our view grows ten times wider.',startR:'We begin at the farthest place we can see. With every step the view shrinks ten times, until we are home on Earth.',
   endO:'And somewhere inside this vast web is one pale blue dot we call home.',endR:'From the edge of the observable universe, we have come back to one small planet we call home. Thank you for exploring.'}
 };
+/* Poetic narration (outbound tour only). One entry per level; '' = silence, the journey carries on without a pause. */
+const POEM={
+ id:[['Kita mulai dari sini,','sebuah bola biru selebar dua belas ribu tujuh ratus empat puluh dua kilometer.','Tempat semua yang pernah kita cintai, kita perjuangkan, dan kita khawatirkan.'],
+  ['Lalu pandangan melebar,','sepuluh kali lipat di setiap langkah.'],
+  ['Bumi mengecil menjadi titik.'],[],[],[],[],
+  ['Matahari menjadi satu di antara ratusan miliar bintang.'],[],
+  ['Bima Sakti menjadi sebutir cahaya,','di jaring kosmik selebar sembilan puluh tiga miliar tahun cahaya.'],
+  ['Dari sejauh ini, semua yang terasa besar perlahan menjadi sunyi.','Yang tersisa hanya cahaya.','Sebagian telah berjalan jutaan tahun, hanya untuk sampai ke mata kita malam ini.','Dan di suatu tempat di antara semua itu, ada kita.','Kecil, tapi masih bisa merasa takjub.']],
+ en:[['We begin here,','a blue sphere twelve thousand seven hundred and forty two kilometers wide.','Home to everything we have ever loved, fought for, and worried about.'],
+  ['Then the view widens,','ten times with every step.'],
+  ['Earth shrinks to a dot.'],[],[],[],[],
+  ['The Sun becomes one among hundreds of billions of stars.'],[],
+  ['The Milky Way becomes a single grain of light,','in a cosmic web ninety three billion light-years across.'],
+  ['From this far away, everything that once felt so big slowly falls silent.','All that remains is light.','Some of it travelling for millions of years, just to reach our eyes tonight.','And somewhere among it all, there we are.','Small, yet still able to feel wonder.']]
+};
+const POEM_SUB={id:{'sebuah bola biru selebar dua belas ribu tujuh ratus empat puluh dua kilometer.':'sebuah bola biru selebar 12.742 kilometer.','di jaring kosmik selebar sembilan puluh tiga miliar tahun cahaya.':'di jaring kosmik selebar 93 miliar tahun cahaya.'},
+ en:{'a blue sphere twelve thousand seven hundred and forty two kilometers wide.':'a blue sphere 12,742 kilometers wide.','in a cosmic web ninety three billion light-years across.':'in a cosmic web 93 billion light-years across.'}};
 const UI={
- id:{cc:'Subtitle',ccOn:'Subtitle aktif',ccOff:'Subtitle mati',voice:'Suara narator',rate:'Kecepatan bicara',auto:'Otomatis (terbaik)',none:'Tidak ada suara untuk bahasa ini. Subtitle tetap tampil.',listen:'Dengarkan',stopL:'Berhenti',narrator:'Narator',
+ id:{cc:'Subtitle',ccOn:'Subtitle aktif',ccOff:'Subtitle mati',voice:'Suara narator',rate:'Kecepatan bicara',auto:'Otomatis (terbaik)',none:'Tidak ada suara untuk bahasa ini. Subtitle tetap tampil.',listen:'Dengarkan',stopL:'Berhenti',narrator:'Narator',style:'Gaya narasi',sDoc:'Dokumenter',sPoem:'Puisi (tur keluar)',rec:'🎬 Mode rekam',recHint:'Mode rekam: tur puisi tanpa tombol dan label. Tekan H atau ikon mata untuk keluar.',
   prev:'Bab sebelumnya',next:'Bab berikutnya',pause:'Jeda tur',play:'Lanjutkan tur',stop:'Akhiri tur',chap:(i,n,t)=>`Bab ${i}/${n} · ${t}`,test:'Coba suara',testLine:'Halo! Saya akan memandumu menjelajahi alam semesta.',paused:'Tur dijeda'},
- en:{cc:'Subtitles',ccOn:'Subtitles on',ccOff:'Subtitles off',voice:'Narrator voice',rate:'Speaking rate',auto:'Automatic (best)',none:'No voice for this language on this device. Subtitles still show.',listen:'Listen',stopL:'Stop',narrator:'Narrator',
+ en:{cc:'Subtitles',ccOn:'Subtitles on',ccOff:'Subtitles off',voice:'Narrator voice',rate:'Speaking rate',auto:'Automatic (best)',none:'No voice for this language on this device. Subtitles still show.',listen:'Listen',stopL:'Stop',narrator:'Narrator',style:'Narration style',sDoc:'Documentary',sPoem:'Poem (outbound tour)',rec:'🎬 Recording mode',recHint:'Recording mode: poem tour with no buttons or labels. Press H or the eye icon to exit.',
   prev:'Previous chapter',next:'Next chapter',pause:'Pause tour',play:'Resume tour',stop:'End tour',chap:(i,n,t)=>`Chapter ${i}/${n} · ${t}`,test:'Test voice',testLine:'Hello! I will guide you on a journey across the universe.',paused:'Tour paused'}
 };
-return{L,T,UI};
+return{L,T,UI,POEM,POEM_SUB};
 })();

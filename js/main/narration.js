@@ -13,20 +13,20 @@ function voicesFor(l){if(!SS)return[];const pre=l==='en'?'en':'id';return SS.get
 function pickVoice(){const vs=voicesFor(lang);if(!vs.length)return null;let want=null;try{want=localStorage.getItem('tk3d-voice-'+lang)}catch(e){}return(want&&vs.find(v=>v.name===want))||vs[0]}
 function duck(on){const S=MK.SND;if(S.ctx&&S.master&&S.on)S.master.gain.setTargetAtTime(on?.32:.9,S.ctx.currentTime,.35)}
 const subs=$('subs'),subT=$('subT'),subTag=$('subTag');
-function subShow(text){if(!CC){subs.hidden=true;return}subTag.textContent=NAR.tag;subT.textContent='';subT.classList.remove('kara');NAR.words=[];const re=/\S+/g;let m;while((m=re.exec(text))){const sp=mk('span','w',m[0]);NAR.words.push([m.index,sp]);subT.append(sp,document.createTextNode(' '))}subs.hidden=false;subs.classList.remove('out');void subs.offsetWidth;subs.classList.add('in')}
+function subShow(text){if(NAR.poem&&NS.POEM_SUB[lang][text])text=NS.POEM_SUB[lang][text];subs.classList.toggle('poem',!!NAR.poem);if(!CC){subs.hidden=true;return}subTag.textContent=NAR.tag;subT.textContent='';subT.classList.remove('kara');NAR.words=[];const re=/\S+/g;let m;while((m=re.exec(text))){const sp=mk('span','w',m[0]);NAR.words.push([m.index,sp]);subT.append(sp,document.createTextNode(' '))}subs.hidden=false;subs.classList.remove('out');void subs.offsetWidth;subs.classList.add('in')}
 function subWord(k){subT.classList.add('kara');NAR.words.forEach(([,sp],j)=>{sp.classList.toggle('said',j<k);sp.classList.toggle('now',j===k)})}
 function subHide(){subs.classList.remove('in');subs.classList.add('out');setTimeout(()=>{if(!NAR.active)subs.hidden=true},450)}
 function wordTicker(ms){clearInterval(NAR.wTimer);const n=NAR.words.length;if(!n)return;let k=0;subWord(0);const per=Math.max(120,ms/n);NAR.wTimer=setInterval(()=>{if(NAR.bound){clearInterval(NAR.wTimer);return}k++;if(k>=n){clearInterval(NAR.wTimer);subWord(n);return}subWord(k)},per)}
-function estMs(t){const w=t.split(/\s+/).length;return Math.max(1500,w*(lang==='id'?410:360)/NRATE+350)}
+function estMs(t){const w=t.split(/\s+/).length;return Math.max(1500,w*(lang==='id'?410:360)/NRATE*(NAR.poem?1.15:1)+350)}
 function narStop(keepSubs){NAR.tok++;NAR.active=false;clearTimeout(NAR.timer);clearInterval(NAR.wTimer);try{SS&&SS.cancel()}catch(e){}duck(false);if(NAR.hold){tourHold=false;NAR.hold=false}clearTimeout(holdTimer);if(!keepSubs)subHide();setListen(false)}
 function narrate(lines,opt){opt=opt||{};narStop(true);const useVoice=NARR&&SS&&pickVoice();if(!useVoice&&!CC){if(opt.onDone)opt.onDone();return false}
-  NAR.q=lines.filter(Boolean).flatMap(t=>t.match(/[^.!?]+[.!?]+["”’]?|[^.!?]+$/g)||[t]).map(t=>t.trim()).filter(Boolean);NAR.i=opt.from||0;NAR.tag=opt.tag||NU().narrator;NAR.onDone=opt.onDone||null;NAR.active=true;NAR.hold=!!opt.hold;
+  NAR.poem=!!opt.poem;NAR.q=opt.poem?lines.filter(Boolean):lines.filter(Boolean).flatMap(t=>t.match(/[^.!?]+[.!?]+["”’]?|[^.!?]+$/g)||[t]).map(t=>t.trim()).filter(Boolean);NAR.i=opt.from||0;NAR.tag=opt.tag||NU().narrator;NAR.onDone=opt.onDone||null;NAR.active=true;NAR.hold=!!opt.hold;
   if(NAR.hold){tourHold=true;clearTimeout(holdTimer);holdTimer=setTimeout(()=>{tourHold=false},90000)}if(useVoice)duck(true);narNext(NAR.tok);return true}
 function narNext(tok){if(tok!==NAR.tok)return;if(NAR.i>=NAR.q.length){NAR.active=false;duck(false);if(NAR.hold){tourHold=false;NAR.hold=false}clearTimeout(holdTimer);subHide();setListen(false);const f=NAR.onDone;NAR.onDone=null;if(f)f();return}
-  const t=NAR.q[NAR.i];NAR.bound=false;const adv=()=>{if(tok!==NAR.tok)return;NAR.i++;NAR.timer=setTimeout(()=>narNext(tok),60)};
+  const t=NAR.q[NAR.i];NAR.bound=false;const adv=()=>{if(tok!==NAR.tok)return;NAR.i++;NAR.timer=setTimeout(()=>narNext(tok),NAR.poem?650:60)};
   const v=NARR&&SS?pickVoice():null;const ms=estMs(t);
   if(!v){subShow(t);NAR.timer=setTimeout(adv,ms+250);return}
-  try{try{SS.resume()}catch(e){}const u=new SpeechSynthesisUtterance(t);NAR.u=u;u.voice=v;u.lang=v.lang;u.rate=NRATE;u.pitch=lang==='en'?.96:1;u.volume=1;let started=false,done=false;
+  try{try{SS.resume()}catch(e){}const u=new SpeechSynthesisUtterance(t);NAR.u=u;u.voice=v;u.lang=v.lang;u.rate=NRATE*(NAR.poem?.9:1);u.pitch=lang==='en'?.96:1;u.volume=1;let started=false,done=false;
     const finish=()=>{if(done)return;done=true;clearTimeout(wd);clearTimeout(cap);if(!started)subShow(t);adv()};
     u.onstart=()=>{if(tok!==NAR.tok)return;started=true;subShow(t)};
     u.onboundary=e=>{if(tok!==NAR.tok||!started)return;if(e.name&&e.name!=='word')return;NAR.bound=true;let k=0;for(let j=0;j<NAR.words.length;j++)if(NAR.words[j][0]<=e.charIndex)k=j;subWord(k)};
@@ -35,7 +35,9 @@ function narNext(tok){if(tok!==NAR.tok)return;if(NAR.i>=NAR.q.length){NAR.active
     const cap=setTimeout(finish,ms*2.6+4000);
     SS.speak(u)}catch(e){subShow(t);NAR.timer=setTimeout(adv,ms+250)}}
 function speak(text,opt){return narrate([text],opt)}
-function levelLines(li,dir,first){const S=NS.L[li][lang];const T=NS.T[lang];const out=[];if(first)out.push(dir>0?T.startO:T.startR);out.push(dir>0?S.o:S.r,...S.c);return out}
+let NSTYLE='doc';try{if(localStorage.getItem('tk3d-nstyle')==='poem')NSTYLE='poem'}catch(e){}
+const poemOn=dir=>NSTYLE==='poem'&&dir>0;
+function levelLines(li,dir,first){if(poemOn(dir))return NS.POEM[lang][li].slice();const S=NS.L[li][lang];const T=NS.T[lang];const out=[];if(first)out.push(dir>0?T.startO:T.startR);out.push(dir>0?S.o:S.r,...S.c);return out}
 /* voice picker + rate */
 function fillVoices(){const sel=$('voiceSel');if(!sel)return;const vs=voicesFor(lang);sel.textContent='';const o0=mk('option','',NU().auto);o0.value='';sel.appendChild(o0);let want='';try{want=localStorage.getItem('tk3d-voice-'+lang)||''}catch(e){}
   for(const v of vs){const o=mk('option','',`${v.name} (${v.lang})`);o.value=v.name;if(v.name===want)o.selected=true;sel.appendChild(o)}sel.disabled=!vs.length;$('voiceNote').hidden=!!vs.length||!SS;$('voiceNote').textContent=NU().none}

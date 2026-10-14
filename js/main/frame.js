@@ -56,7 +56,8 @@ const HITS=[];let hoverId=null;const BODYPX=[];
 const C_INK='#ffffff',C_SIL='#c7cdd8',C_RED='#fc3d21',C_SUN='#ffd27a';
 function hasInfo(id){return !!(CT.INFO[id]||C2.NEW[id]||MOONMAP[id]||EX.INFO[id]||(id&&id.startsWith('con:')))}
 const LBOX=[];function lfree(x,y,w,h){for(const b of LBOX)if(x<b[0]+b[2]&&x+w>b[0]&&y<b[1]+b[3]&&y+h>b[1])return false;LBOX.push([x,y,w,h]);return true}
-function label(p,text,a,col,dx,dy,size,id,weight){if(!p||a<.04)return;col=col||C_INK;dx=dx===undefined?9:dx;dy=dy===undefined?-8:dy;size=size||12;
+const CINE=()=>document.body.classList.contains('cine');
+function label(p,text,a,col,dx,dy,size,id,weight){if(!p||a<.04)return;if(CINE()&&id!==hoverId)return;if(id!==hoverId&&id!==focus&&text.indexOf('(')>0&&/\([^)]*\d/.test(text))text=text.replace(/\s*\([^)]*\d[^)]*\)/g,'');col=col||C_INK;dx=dx===undefined?9:dx;dy=dy===undefined?-8:dy;size=size||12;
   octx.globalAlpha=Math.min(1,a);octx.font=`${weight||600} ${size}px Inter,"Helvetica Neue",Arial,sans-serif`;const x=p[0]+dx,y=p[1]+dy;
   octx.shadowColor='rgba(0,0,0,.85)';octx.shadowBlur=4;octx.fillStyle=col;octx.fillText(text,x,y);octx.shadowBlur=0;
   if(id&&a>.3&&hasInfo(id)){const w=octx.measureText(text).width;HITS.push([x-4,y-size-4,w+8,size+10,id,1],[p[0]-11,p[1]-11,22,22,id,0]);if(id===hoverId){octx.fillStyle=C_RED;octx.fillRect(x,y+3,w,2)}}}
@@ -76,7 +77,7 @@ function surfWorld(st){const L=bodies[st.body==='Bulan'?'Bumi':st.body];if(!L||!
   const v=new THREE.Vector3(Math.cos(st.lat)*Math.cos(st.lon)*r,Math.sin(st.lat)*r,-Math.cos(st.lat)*Math.sin(st.lon)*r);mesh.localToWorld(v);const c=new THREE.Vector3();mesh.getWorldPosition(c);
   const n=v.clone().sub(c).normalize();const toCam=camera.position.clone().sub(v).normalize();return{v,n,vis:n.dot(toCam),rpx:r*KM*pxPerM()}}
 function drawOverlay(){
-  octx.clearRect(0,0,W,H);HITS.length=0;BODYPX.length=0;LBOX.length=0;const ppm=pxPerM();const L_=U().lab,un=U().units;const sky=skyMorph;
+  octx.clearRect(0,0,W,H);HITS.length=0;BODYPX.length=0;LBOX.length=0;if(CINE())return;const ppm=pxPerM();const L_=U().lab,un=U().units;const sky=skyMorph;
   const aS=sunL.alpha*(1-sky);if(aS>.03){const p=proj([0,0,0]);const rpx=PHYS.Matahari.r*KM*ppm;if(rpx<3)dot(p,3,C_SUN,aS);if(p)BODYPX.push(['Matahari',p[0],p[1]]);label(p,nm('Matahari'),aS*win(9.7,15.8,.6,s),C_SUN,Math.max(9,rpx*.8),-Math.max(8,rpx*.8),13,'Matahari',700)}
   for(const n of PL){const L=bodies[n];const p=proj(POS[n]);if(!p)continue;const rpx=PHYS[n].r*KM*ppm;const orbpx=Math.hypot(...A.planetEcl(n,0))*AU*ppm;
     const isF=n===focus&&s<t0eff(n)+1.4;const aMark=isF?1:Math.max(solL.alpha,L?L.alpha:0)*ss(4,14,orbpx)*(1-ss(W*.9,W*1.5,orbpx));
