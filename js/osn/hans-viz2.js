@@ -410,4 +410,78 @@ LAB.tangen = el => mkLab(el, {
   },
   outputs: [['r', 'Jarak titik singgung dari Matahari r = R₀ cos l'], ['R', 'Jarak dari pusat R = R₀ sin l'], ['vr', 'Kecepatan radial maksimum']]
 });
+
+/* ---------- Expanding universe: Hubble's law from every galaxy ---------- */
+LAB.ekspansi = el => {
+  let s = 9; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, gal = [];
+  for (let i = 0; i < 46; i++) gal.push([rnd() * 2 - 1, rnd() * 2 - 1]);
+  let pick = 0; gal.forEach((g, i) => { if (Math.hypot(...g) < Math.hypot(...gal[pick])) pick = i; });
+  const lab = mkLab(el, {
+    title: 'Roti kismis kosmik: semua galaksi menjauh dari semua', hint: 'Geser faktor skala a(t). Semua jarak membesar dengan faktor yang sama, jadi dari galaksi mana pun (klik untuk memilih "rumah"), galaksi lain menjauh dengan kecepatan sebanding jaraknya: hukum Hubble. Tidak ada pusat pemuaian; panah = perpindahan sejak a = 1.', aspect: 0.62,
+    controls: [{ k: 'a', label: 'Faktor skala a', min: 1, max: 1.6, step: 0.005, val: 1.25, fmt: x => fmt(x, 3) }],
+    draw(c, W, H, v, C) {
+      const pw = Math.min(W * 0.62, W - 170), cx = pw / 2, cy = H / 2, S = Math.min(pw, H) * 0.19, home = gal[pick];
+      c.save(); c.beginPath(); c.rect(0, 0, pw, H); c.clip();
+      const P = (g, a) => [cx + (g[0] - home[0]) * a * S, cy + (g[1] - home[1]) * a * S];
+      const pts = [];
+      gal.forEach((g, i) => { const [x0, y0] = P(g, 1), [x1, y1] = P(g, v.a); if (i !== pick) { line(c, x0, y0, x1, y1, C.line, 1); arrow(c, x0 + (x1 - x0) * 0.6, y0 + (y1 - y0) * 0.6, x1, y1, C.muted, 1); } disc(c, x1, y1, i === pick ? 6 : 3.4, i === pick ? C.acc : C.blue); const d0 = Math.hypot(g[0] - home[0], g[1] - home[1]); pts.push([d0 * v.a, d0 * (v.a - 1)]); });
+      text(c, 'rumah kita', P(home, v.a)[0] + 9, P(home, v.a)[1] - 8, C.acc); c.restore();
+      // v-d plot
+      const bx = pw + 16, bw = W - bx - 12, by = 18, bh = H - 60; c.strokeStyle = C.line; c.strokeRect(bx, by, bw, bh);
+      const dm = 2.9 * v.a, vm = 2.9 * 0.6;
+      pts.forEach(([d, dv]) => disc(c, bx + d / dm * bw, by + bh - dv / vm * bh, 2.6, C.blue));
+      line(c, bx, by + bh, bx + bw, by + bh - (dm * (v.a - 1) / v.a) / vm * bh, C.acc, 1.4, [4, 3]);
+      text(c, 'jarak', bx + bw / 2, by + bh + 14, C.muted, 'center'); c.save(); c.translate(bx - 6, by + bh / 2); c.rotate(-Math.PI / 2); text(c, 'perpindahan (∝ kecepatan)', 0, 0, C.muted, 'center'); c.restore();
+      return { H: 'kemiringan = (a − 1)/a = ' + fmt((v.a - 1) / v.a, 3), z: fmt(v.a - 1, 3) + ' (cahaya dari a = 1 diterima pada a)' };
+    },
+    outputs: [['H', 'Garis lurus v ∝ d dari setiap galaksi'], ['z', 'Pergeseran merah z = a_kini/a_dulu − 1']]
+  });
+  const cv = el.querySelector('canvas');
+  cv.style.cursor = 'pointer';
+  cv.addEventListener('click', ev => { const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, W = r.width, H = r.height, pw = Math.min(W * 0.62, W - 170), S = Math.min(pw, H) * 0.19, home = gal[pick]; let best = -1, bd = 1e9; gal.forEach((g, i) => { const gx = pw / 2 + (g[0] - home[0]) * lab.v.a * S, gy = H / 2 + (g[1] - home[1]) * lab.v.a * S, d = Math.hypot(gx - x, gy - y); if (d < bd) { bd = d; best = i; } }); if (bd < 24) { pick = best; lab.draw(); } });
+};
+
+/* ---------- Scale factor a(t) for different universes ---------- */
+LAB.skala = el => mkLab(el, {
+  title: 'Sejarah faktor skala a(t)', hint: 'Persamaan Friedmann dengan materi (Ω_m) dan energi gelap (Ω_Λ), semuanya dinormalkan ke hari ini (a = 1, t = 0 di sumbu = sekarang). Garis putus-putus = pemuaian konstan dengan laju sekarang (umur = waktu Hubble 1/H₀). Gravitasi materi memperlambat (umur < 1/H₀); energi gelap mempercepat (umur bisa ≈ atau > 1/H₀).', aspect: 0.6,
+  controls: [{ k: 'm', label: 'Ω_materi', min: 0, max: 3, step: 0.01, val: 0.31, fmt: x => fmt(x, 2) }, { k: 'L', label: 'Ω_Λ (energi gelap)', min: 0, max: 1.5, step: 0.01, val: 0.69, fmt: x => fmt(x, 2) }, { k: 'H', label: 'H₀', min: 50, max: 100, step: 0.5, val: 67.7, unit: 'km/s/Mpc', fmt: x => fmt(x, 1) }],
+  presets: [{ label: 'Model standar (Planck)', set: { m: 0.31, L: 0.69 } }, { label: 'Einstein–de Sitter', set: { m: 1, L: 0 } }, { label: 'Tertutup (Ω = 2)', set: { m: 2, L: 0 } }, { label: 'Terbuka (Ω = 0,3)', set: { m: 0.3, L: 0 } }, { label: 'Kosong', set: { m: 0, L: 0 } }],
+  draw(c, W, H, v, C) {
+    const tH = 977.8 / v.H, k = 1 - v.m - v.L, E = a => Math.sqrt(Math.max(1e-12, v.m / a ** 3 + v.L + k / a ** 2));
+    // integrate backwards and forwards in units of 1/H0
+    const back = [], fwd = []; let a = 1, t = 0, dt = 0.002, ok = true;
+    while (a > 0.002 && t > -3) { const da = a * E(a) * dt; a -= da; t -= dt; back.push([t, a]); if (!isFinite(a)) break; }
+    const age = -t;
+    a = 1; t = 0; let ad = 1;
+    for (let i = 0; i < 1500 && a > 0.002 && a < 6; i++) { const h2 = v.m / a ** 3 + v.L + k / a ** 2; if (h2 <= 0) ad = -ad; a += ad * a * Math.sqrt(Math.abs(h2)) * dt; t += dt; fwd.push([t, a]); }
+    const box = [46, 12, W - 60, H - 52], tmin = -1.6, tmax = 1.6, X = q => box[0] + (q - tmin) / (tmax - tmin) * box[2], Y = q => box[1] + box[3] * (1 - q / 3);
+    c.strokeStyle = C.line; c.strokeRect(box[0], box[1], box[2], box[3]);
+    line(c, X(0), box[1], X(0), box[1] + box[3], C.muted, 1, [2, 4]); text(c, 'sekarang', X(0) + 4, box[1] + 12, C.muted);
+    line(c, X(-1), Y(0), X(2), Y(3), C.muted, 1, [6, 4]);
+    c.strokeStyle = C.acc; c.lineWidth = 2.4; c.beginPath(); let pen = false; back.slice().reverse().concat([[0, 1]], fwd).forEach(([tt, aa]) => { if (tt < tmin || tt > tmax || aa > 3.05) { pen = false; return; } const x = X(tt), y = Y(aa); pen ? c.lineTo(x, y) : c.moveTo(x, y); pen = true; }); c.stroke();
+    [-1, 0, 1].forEach(q => text(c, fmt(q * tH, 1), X(q), box[1] + box[3] + 14, C.muted, 'center'));
+    text(c, 'waktu dari sekarang (miliar tahun)', box[0] + box[2] / 2, box[1] + box[3] + 30, C.fg, 'center');
+    [0, 1, 2, 3].forEach(q => text(c, String(q), box[0] - 6, Y(q), C.muted, 'right'));
+    const q0 = v.m / 2 - v.L, fate = fwd.length && fwd[fwd.length - 1][1] < 1 ? 'mengerut kembali (Big Crunch)' : q0 < 0 ? 'mengembang dipercepat selamanya' : 'mengembang selamanya, melambat';
+    return { age: fmt(age * tH, 2) + ' miliar tahun (' + fmt(age, 2) + ' × 1/H₀)', geo: Math.abs(k) < 0.01 ? 'datar (Ω = 1)' : k < 0 ? 'tertutup, lengkung positif (Ω > 1)' : 'terbuka, lengkung negatif (Ω < 1)', q: fmt(q0, 2) + (q0 < 0 ? ' (dipercepat)' : ' (diperlambat)'), fate, tH: fmt(tH, 2) + ' miliar tahun', rc: fmt(1.878e-29 * (v.H / 100) ** 2, 2) + ' g/cm³' };
+  },
+  outputs: [['age', 'Umur alam semesta'], ['tH', 'Waktu Hubble 1/H₀'], ['geo', 'Geometri'], ['q', 'Parameter perlambatan q₀ = Ω_m/2 − Ω_Λ'], ['fate', 'Nasib'], ['rc', 'Kerapatan kritis 3H₀²/8πG']]
+});
+
+/* ---------- Three geometries ---------- */
+F.geometri = () => {
+  let b = '';
+  // sphere
+  b += `<circle class="f-line" cx="90" cy="100" r="62"/><ellipse class="f-line f-dash" cx="90" cy="100" rx="62" ry="18"/>`;
+  b += `<path class="f-acc f-strong" d="M 90 40 Q 60 80 42 108 Q 90 128 138 108 Q 120 80 90 40 Z" fill="none"/>`;
+  b += txt(90, 186, 'lengkung positif', 'f-txt f-b') + txt(90, 204, 'Ω > 1, tertutup', 'f-txt f-mut-t') + txt(90, 222, 'Σ sudut > 180°', 'f-txt f-acc-t');
+  // flat
+  b += `<polygon class="f-line" points="190,140 340,140 360,70 210,70" fill="none"/><polygon class="f-acc f-strong" points="225,128 320,128 270,82" fill="none"/>`;
+  b += txt(275, 186, 'datar', 'f-txt f-b') + txt(275, 204, 'Ω = 1', 'f-txt f-mut-t') + txt(275, 222, 'Σ sudut = 180°', 'f-txt f-acc-t');
+  // saddle
+  let d = ''; for (let i = -4; i <= 4; i++) { let p = ''; for (let j = -10; j <= 10; j++) { const x = j / 10, y = i / 4, z = (x * x - y * y) * 0.45; p += (j > -10 ? 'L' : 'M') + (470 + x * 70 + y * 22).toFixed(1) + ' ' + (100 + y * 26 - z * 50).toFixed(1); } d += p; }
+  b += `<path class="f-line f-thin" d="${d}"/><path class="f-acc f-strong" d="M 425 104 Q 470 96 515 104 Q 492 96 470 72 Q 448 96 425 104 Z" fill="none"/>`;
+  b += txt(470, 186, 'lengkung negatif', 'f-txt f-b') + txt(470, 204, 'Ω < 1, terbuka', 'f-txt f-mut-t') + txt(470, 222, 'Σ sudut < 180°', 'f-txt f-acc-t');
+  return svg(560, 232, b, 'Tiga geometri alam semesta', 'Analogi dua dimensi: permukaan bola, bidang, dan pelana. Pengukuran fluktuasi CMB (WMAP, Planck) menunjukkan alam semesta kita sangat dekat dengan datar: Ω_total = 1,00 ± 0,002.');
+};
 })();
