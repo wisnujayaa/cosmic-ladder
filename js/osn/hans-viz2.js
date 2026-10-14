@@ -175,9 +175,9 @@ LAB.jamfase = el => mkLab(el, {
     const alt = 90 - Math.abs(dh) / D2R, up = alt > 0;
     line(c, ox, oy, mx, my, up ? C.acc : C.muted, 1, [4, 4]);
     // phase thumbnail
-    const px = W * 0.86, py = H * 0.78, pr = Math.min(W, H) * 0.08, k = (1 - Math.cos(el)) / 2;
+    const px = Math.min(W * 0.86, W - 58), py = H * 0.78, pr = Math.min(W, H) * 0.08, k = (1 - Math.cos(el)) / 2;
     moonPhase(c, px, py, pr, el, C);
-    text(c, 'tampak dari Bumi (BBU)', px, py + pr + 14, C.muted, 'center');
+    text(c, 'dari Bumi (BBU)', px, py + pr + 14, C.muted, 'center');
     const rise = (12 + v.age * 24 / 29.53 - 6 + 48) % 24, tr = (12 + v.age * 24 / 29.53) % 24, set = (tr + 6) % 24, hm = x => { const h = Math.floor(x), m = Math.round((x - h) * 60); return String((h + (m === 60 ? 1 : 0)) % 24).padStart(2, '0') + '.' + String(m % 60).padStart(2, '0'); };
     const ph = v.age < 1 || v.age > 28.5 ? 'bulan baru' : v.age < 6.4 ? 'sabit muda (waxing crescent)' : v.age < 8.4 ? 'kuartir pertama' : v.age < 13.8 ? 'cembung awal (waxing gibbous)' : v.age < 15.8 ? 'purnama' : v.age < 21.1 ? 'cembung akhir (waning gibbous)' : v.age < 23.1 ? 'kuartir ketiga' : 'sabit tua (waning crescent)';
     const where = !up ? 'di bawah horizon' : Math.abs(dh) < 0.12 ? 'dekat meridian' : (dh > 0 ? 'di langit timur (naik)' : 'di langit barat (turun)');
@@ -207,4 +207,124 @@ LAB.siang = el => mkLab(el, {
   },
   outputs: [['dec', 'Deklinasi Matahari'], ['L', 'Panjang siang'], ['noon', 'Tinggi Matahari tengah hari'], ['az', 'Azimut terbit/terbenam (dari U)']]
 });
+
+/* ---------- Stellar evolution tracks on the HR diagram (schematic) ---------- */
+const TRACKS = {
+  1: { name: '1 M☉ (Matahari)', pts: [[3.61, 1.3, 'Protobintang di jejak Hayashi: mengerut, hampir vertikal turun (konveksi penuh). ~30 juta tahun.'], [3.63, 0.2, 'Jejak Henyey: inti menjadi radiatif, bintang memanas ke kiri.'], [3.75, -0.15, 'ZAMS: pembakaran H di pusat dimulai (rantai p–p).'], [3.77, 0.25, 'Deret utama: ~10 miliar tahun, perlahan makin terang (Matahari kini di sini, umur 4,6 miliar tahun).'], [3.71, 0.45, 'Subraksasa: H di pusat habis, pembakaran H pindah ke kulit; inti He mengerut.'], [3.62, 1.2, 'Cabang raksasa merah: selubung mengembang dan mendingin, luminositas naik ratusan kali (~1 miliar tahun).'], [3.54, 3.35, 'Puncak cabang raksasa merah: inti He terdegenerasi mencapai ~10⁸ K → kilatan helium.'], [3.69, 1.75, 'Cabang horizontal: He terbakar stabil menjadi C dan O di pusat (~100 juta tahun).'], [3.56, 2.6, 'Cabang raksasa asimtotik (AGB): kulit He dan H menyala bergantian, bintang berdenyut dan kehilangan massa.'], [3.52, 3.6, 'Puncak AGB: angin bintang melontarkan selubung.'], [4.4, 3.65, 'Nebula planeter: inti panas tersingkap dan mengionisasi selubung (~10⁴ tahun).'], [5.05, 3.3, 'Inti panas ~100 000 K, berhenti membakar.'], [4.6, -0.5, 'Katai putih C–O: ~0,55 M☉ seukuran Bumi, ditopang tekanan degenerasi elektron.'], [3.9, -3.5, 'Katai putih mendingin perlahan (miliaran tahun) menuju katai hitam.']] },
+  5: { name: '5 M☉', pts: [[3.64, 3.0, 'Protobintang: jejak Hayashi singkat.'], [3.70, 2.6, 'Jejak Henyey hampir mendatar ke kiri (~0,7 juta tahun).'], [4.24, 2.75, 'ZAMS: daur CNO, inti konvektif.'], [4.19, 3.05, 'Deret utama (~100 juta tahun).'], [4.22, 3.12, '"Kait" akhir deret utama: kontraksi menyeluruh sesaat.'], [3.66, 3.0, 'Menyeberangi celah Hertzsprung dengan cepat (jarang teramati).'], [3.6, 3.2, 'Raksasa merah: He menyala tanpa kilatan (inti tidak terdegenerasi).'], [3.82, 3.25, 'Loop biru: pembakaran He di pusat, bintang bisa menjadi variabel Cepheid saat melintasi jalur ketidakstabilan.'], [3.6, 3.35, 'Kembali ke merah.'], [3.53, 4.2, 'AGB, kehilangan massa besar.'], [4.6, 4.15, 'Nebula planeter.'], [5.1, 3.6, 'Inti panas.'], [4.7, -0.4, 'Katai putih masif (~0,9 M☉).']] },
+  15: { name: '15 M☉', pts: [[3.9, 4.25, 'Protobintang masif: sangat cepat (~0,16 juta tahun), sebagian besar tersembunyi dalam awan debu.'], [4.48, 4.3, 'ZAMS: bintang kelas B0, daur CNO.'], [4.44, 4.6, 'Deret utama (~12 juta tahun).'], [4.2, 4.72, 'Pembakaran He mulai saat bintang masih biru.'], [3.85, 4.8, 'Maharaksasa kuning.'], [3.56, 4.95, 'Maharaksasa merah: berturut-turut membakar C, Ne, O, Si; inti besi terbentuk dalam hitungan hari.'], [3.56, 4.97, 'Inti besi runtuh → supernova tipe II, menyisakan bintang neutron (atau lubang hitam untuk bintang yang lebih masif).']] }
+};
+LAB.evohr = el => mkLab(el, {
+  title: 'Jejak evolusi bintang di diagram H–R', hint: 'Pilih massa awal, lalu geser "tahap" untuk mengikuti perjalanan bintang. Jejak digambar skematik (mengikuti model Iben dan sejenisnya); garis abu-abu = deret utama umur nol (ZAMS). Perhatikan: semakin masif, semakin cepat dan semakin "tinggi" jalurnya.', aspect: 0.66,
+  controls: [{ k: 'm', label: 'Massa awal', min: 0, max: 2, step: 1, val: 0, fmt: x => ['1 M☉', '5 M☉', '15 M☉'][Math.round(x)] }, { k: 'p', label: 'Tahap evolusi', min: 0, max: 1, step: 0.002, val: 0.25, fmt: x => Math.round(x * 100) + '%' }],
+  presets: [{ label: 'Matahari kini', set: { m: 0, p: 0.24 } }, { label: 'Kilatan He', set: { m: 0, p: 0.47 } }, { label: 'Nebula planeter', set: { m: 0, p: 0.76 } }, { label: 'Cepheid (5 M☉)', set: { m: 1, p: 0.6 } }, { label: 'Supernova (15 M☉)', set: { m: 2, p: 1 } }],
+  draw(c, W, H, v, C) {
+    const key = [1, 5, 15][Math.round(v.m)], T = TRACKS[key], box = [52, 12, W - 70, H - 46];
+    const { X, Y } = OSN.labkit.axes(c, C, box, [5.2, 3.4], [-4, 6], { xt: [5, Math.log10(30000), 4, Math.log10(5000), Math.log10(3000)], xf: q => Math.round(10 ** q / 1000) + ' kK', yt: [-4, -2, 0, 2, 4, 6], yf: q => '10' + ({ '-4': '⁻⁴', '-2': '⁻²', 0: '⁰', 2: '²', 4: '⁴', 6: '⁶' })[q], yl: 'L / L☉', ylo: 40 });
+    // ZAMS
+    c.strokeStyle = C.muted; c.lineWidth = 6; c.globalAlpha = 0.25; c.beginPath(); [[4.6, 5.2], [4.48, 4.3], [4.24, 2.75], [4.0, 1.6], [3.85, 0.6], [3.75, -0.15], [3.6, -1.3], [3.5, -2.6]].forEach(([a, b], i) => i ? c.lineTo(X(a), Y(b)) : c.moveTo(X(a), Y(b))); c.stroke(); c.globalAlpha = 1;
+    text(c, 'deret utama', X(4.02), Y(1.6) + 16, C.muted, 'left');
+    // radius lines
+    [[0.01, 'R = 0,01 R☉'], [1, '1 R☉'], [100, '100 R☉']].forEach(([r, l]) => { const yA = lt => 2 * Math.log10(r) + 4 * (lt - Math.log10(5772)); line(c, X(5.2), Y(yA(5.2)), X(3.4), Y(yA(3.4)), C.line, 0.8, [2, 5]); const lt = r === 0.01 ? 4.45 : r === 1 ? 3.62 : 3.47; text(c, l, X(lt) + 3, Y(yA(lt)) - 6, C.muted); });
+    const P = T.pts, n = P.length - 1, f = v.p * n, i = Math.min(n - 1, Math.floor(f)), u = f - i;
+    c.strokeStyle = C.acc; c.lineWidth = 1.5; c.setLineDash([4, 3]); c.beginPath(); P.forEach(([a, b], j) => j ? c.lineTo(X(a), Y(b)) : c.moveTo(X(a), Y(b))); c.stroke(); c.setLineDash([]);
+    c.lineWidth = 2.6; c.beginPath(); for (let j = 0; j <= i; j++) { const [a, b] = P[j]; j ? c.lineTo(X(a), Y(b)) : c.moveTo(X(a), Y(b)); } const xa = P[i][0] + (P[i + 1][0] - P[i][0]) * u, ya = P[i][1] + (P[i + 1][1] - P[i][1]) * u; c.lineTo(X(xa), Y(ya)); c.stroke();
+    const col = OSN.labkit.bbColor ? OSN.labkit.bbColor(10 ** xa) : C.sun; disc(c, X(xa), Y(ya), 7, col); ring(c, X(xa), Y(ya), 7, C.fg, 1);
+    if (key === 15 && v.p > 0.985) { for (let k = 0; k < 14; k++) { const a = k / 14 * TAU; line(c, X(xa) + 10 * Math.cos(a), Y(ya) + 10 * Math.sin(a), X(xa) + 22 * Math.cos(a), Y(ya) + 22 * Math.sin(a), C.warn, 2); } }
+    const Tk = 10 ** xa, L = 10 ** ya, Rr = Math.sqrt(L) / (Tk / 5772) ** 2;
+    return { st: P[u < 0.5 ? i : i + 1][2], T: fmt(Tk, 0) + ' K', L: fmt(L, L < 1 ? 4 : 0) + ' L☉', R: fmt(Rr, Rr < 0.1 ? 4 : 1) + ' R☉' };
+  },
+  outputs: [['st', 'Tahap'], ['T', 'Suhu efektif'], ['L', 'Luminositas'], ['R', 'Jari-jari (dari L = 4πR²σT⁴)']]
+});
+
+/* ---------- Cluster HR diagram vs age: main-sequence turn-off ---------- */
+LAB.turnoff = el => {
+  let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, stars = [];
+  for (let i = 0; i < 420; i++) { const m = 0.3 * Math.pow(1 - rnd() * (1 - Math.pow(60 / 0.3, -1.35)), -1 / 1.35); stars.push({ m, j: rnd() }); }
+  return mkLab(el, {
+    title: 'Umur gugus dari titik belok (turn-off)', hint: 'Semua bintang gugus lahir bersamaan tetapi bermassa berbeda. Bintang masif menghabiskan hidrogennya lebih cepat (t ≈ 10 miliar tahun × M⁻²·⁵), jadi seiring waktu deret utama "terkikis" dari atas. Massa di titik belok langsung memberi umur gugus.', aspect: 0.66,
+    controls: [{ k: 'age', label: 'Umur gugus', min: 1e6, max: 1.3e10, log: true, val: 1e8, fmt: x => x >= 1e9 ? fmt(x / 1e9, 2) + ' miliar th' : fmt(x / 1e6, 0) + ' juta th' }],
+    presets: [{ label: 'NGC 2362 (4 juta th)', set: { age: 4e6 } }, { label: 'Pleiades (100 juta)', set: { age: 1e8 } }, { label: 'Hyades (650 juta)', set: { age: 6.5e8 } }, { label: 'M67 (4 miliar)', set: { age: 4e9 } }, { label: 'M13 (12 miliar)', set: { age: 1.2e10 } }],
+    draw(c, W, H, v, C) {
+      const box = [52, 12, W - 70, H - 46], { X, Y } = OSN.labkit.axes(c, C, box, [4.75, 3.45], [-4, 6], { xt: [Math.log10(40000), Math.log10(20000), 4, Math.log10(5000), Math.log10(3000)], xf: q => Math.round(10 ** q / 1000) + ' kK', yt: [-4, -2, 0, 2, 4, 6], yf: q => '10' + ({ '-4': '⁻⁴', '-2': '⁻²', 0: '⁰', 2: '²', 4: '⁴', 6: '⁶' })[q], yl: 'L / L☉', ylo: 40 });
+      const life = m => 1e10 * Math.pow(m, -2.5), mto = Math.pow(v.age / 1e10, -1 / 2.5);
+      let nMS = 0, nG = 0, nWD = 0, nR = 0;
+      stars.forEach(st => {
+        const m = st.m, tl = life(m), L0 = m < 0.43 ? 0.23 * m ** 2.3 : m < 2 ? m ** 4 : m < 20 ? 1.4 * m ** 3.5 : 32000 * m, R0 = m < 1 ? m ** 0.8 : m ** 0.57, T0 = 5772 * Math.pow(L0 / R0 ** 2, 0.25);
+        let lt, ll, col;
+        if (v.age < tl) { const f = v.age / tl, L = L0 * (1 + 1.1 * f ** 2), T = T0 * (1 - 0.08 * f); lt = Math.log10(T) + (st.j - 0.5) * 0.01; ll = Math.log10(L) + (st.j - 0.5) * 0.06; nMS++; col = OSN.labkit.bbColor ? OSN.labkit.bbColor(T) : C.fg; }
+        else if (v.age < tl * 1.12) { const g = (v.age / tl - 1) / 0.12; lt = Math.log10(m > 10 ? 3700 + 12000 * (1 - g) : 5000 - 1300 * g) ; ll = Math.log10(L0) + (m > 10 ? 0.4 : 0.3 + g * 2.2) + (st.j - 0.5) * 0.1; nG++; col = OSN.labkit.bbColor ? OSN.labkit.bbColor(10 ** lt) : C.warn; }
+        else if (m < 8) { const age = v.age - tl * 1.12, L = 0.01 * Math.pow(Math.max(age, 1e6) / 1e8, -1.2); ll = Math.max(-4, Math.log10(Math.min(L, 10))); lt = 4.0 + (ll + 4) * 0.12 + (st.j - 0.5) * 0.02; nWD++; col = C.blue; }
+        else { nR++; return; }
+        disc(c, X(lt), Y(ll), m > 3 ? 3 : 2.2, col);
+      });
+      const L0to = mto < 2 ? mto ** 4 : 1.4 * mto ** 3.5, Rto = mto < 1 ? mto ** 0.8 : mto ** 0.57, Tto = 5772 * Math.pow(L0to / Rto ** 2, 0.25);
+      if (mto < 60) { const y = Y(Math.log10(L0to * 1.6)); line(c, box[0], y, box[0] + box[2], y, C.acc, 1, [5, 4]); text(c, 'titik belok', box[0] + box[2] - 4, y - 8, C.acc, 'right'); }
+      const sp = Tto > 30000 ? 'O' : Tto > 10000 ? 'B' : Tto > 7500 ? 'A' : Tto > 6000 ? 'F' : Tto > 5200 ? 'G' : Tto > 3700 ? 'K' : 'M';
+      return { mto: fmt(mto, 2) + ' M☉', sp: 'kelas ' + sp + ' (≈ ' + fmt(Tto, 0) + ' K)', n: nMS + ' deret utama · ' + nG + ' raksasa · ' + nWD + ' katai putih · ' + nR + ' sudah menjadi bintang neutron/lubang hitam' };
+    },
+    outputs: [['mto', 'Massa titik belok'], ['sp', 'Bintang deret utama paling panas'], ['n', 'Populasi']]
+  });
+};
+
+/* ---------- Fates of stars by mass ---------- */
+F.akhirbintang = () => {
+  const row = (y, mass, steps, cls) => {
+    let b = txt(14, y + 5, mass, 'f-txt f-b', 'start'); let x = 118;
+    steps.forEach((st, i) => { const w = st.length * 6.4 + 16; b += `<rect class="${i === steps.length - 1 ? cls : 'f-line'}" x="${x}" y="${y - 13}" width="${w}" height="26" rx="5" fill="none"/>` + txt(x + w / 2, y + 5, st, 'f-txt'); if (i < steps.length - 1) b += `<line class="f-line" x1="${x + w}" y1="${y}" x2="${x + w + 14}" y2="${y}" marker-end="url(#ahf)"/>`; x += w + 16; });
+    return b;
+  };
+  let b = `<defs><marker id="ahf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" class="f-mut-fill"/></marker></defs>`;
+  b += txt(14, 22, 'Massa awal', 'f-txt f-mut-t', 'start') + txt(118, 22, 'Perjalanan (semua dimulai dari awan molekul → protobintang)', 'f-txt f-mut-t', 'start');
+  b += row(54, '< 0,08 M☉', ['tak pernah membakar H', 'katai coklat'], 'f-warn');
+  b += row(94, '0,08–0,5', ['deret utama (> 100 miliar th)', 'katai putih He*'], 'f-blue');
+  b += row(134, '0,5–8', ['deret utama', 'raksasa merah', 'HB/AGB', 'nebula planeter', 'katai putih C–O'], 'f-blue');
+  b += row(174, '8–~25', ['deret utama', 'maharaksasa', 'supernova II', 'bintang neutron'], 'f-acc');
+  b += row(214, '> ~25', ['deret utama', 'maharaksasa/WR', 'kolaps (± SN)', 'lubang hitam'], 'f-warn');
+  b += txt(14, 248, '* belum ada satu pun: umur alam semesta (13,8 miliar th) belum cukup.', 'f-txt f-mut-t', 'start');
+  return svg(720, 260, b, 'Nasib akhir bintang menurut massa', 'Batas massa bersifat perkiraan dan bergantung pada metalisitas, rotasi, serta pasangan biner. Katai putih ≤ 1,44 M☉ (batas Chandrasekhar); bintang neutron ≲ 2–3 M☉ (batas Tolman–Oppenheimer–Volkoff).');
+};
+
+/* ---------- Gamow peak: why fusion works at "only" 15 million K ---------- */
+LAB.gamow = el => mkLab(el, {
+  title: 'Puncak Gamow: celah sempit tempat fusi terjadi', hint: 'Biru = peluang inti punya energi E (ekor Maxwell–Boltzmann, e^(−E/kT)): turun cepat. Jingga = peluang menembus penghalang Coulomb secara kuantum (efek terowongan, e^(−√(E_G/E))): naik cepat. Hasil kalinya (merah) hanya besar di jendela sempit: puncak Gamow. Naikkan suhu dan lihat betapa sensitifnya laju fusi.', aspect: 0.6,
+  controls: [{ k: 'T', label: 'Suhu inti', min: 5, max: 200, log: true, val: 15.7, unit: 'juta K', fmt: x => fmt(x, 1) }, { k: 'r', label: 'Reaksi', min: 0, max: 2, step: 1, val: 0, fmt: x => ['p + p', 'p + ¹²C (daur CNO)', '⁴He + ⁴He (triple-α)'][Math.round(x)] }],
+  presets: [{ label: 'Pusat Matahari', set: { T: 15.7, r: 0 } }, { label: 'Bintang 3 M☉ (CNO)', set: { T: 22, r: 1 } }, { label: 'Inti raksasa merah', set: { T: 100, r: 2 } }],
+  draw(c, W, H, v, C) {
+    const R3 = [[1, 1, 0.5], [1, 6, 12 / 13], [2, 2, 2]][Math.round(v.r)], [Z1, Z2, mr] = R3; // reduced mass in u
+    const EG = 2 * mr * 931.494e3 * (Math.PI * Z1 * Z2 / 137.036) ** 2, kT = 8.617e-5 * v.T * 1e6 / 1000; // keV
+    const E0 = Math.pow(EG * kT * kT / 4, 1 / 3), Emax = Math.max(4 * E0, 6 * kT), box = [44, 14, W - 64, H - 54];
+    const mb = E => Math.exp(-E / kT), tn = E => Math.exp(-Math.sqrt(EG / E)), pr = E => mb(E) * tn(E);
+    const peak = pr(E0), X = E => box[0] + E / Emax * box[2], Y = y => box[1] + box[3] * (1 - y);
+    c.strokeStyle = C.line; c.strokeRect(box[0], box[1], box[2], box[3]);
+    const curve = (f, col, w, norm) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); for (let i = 1; i <= 300; i++) { const E = Emax * i / 300, y = Math.min(1.05, f(E) / norm); i === 1 ? c.moveTo(X(E), Y(y)) : c.lineTo(X(E), Y(y)); } c.stroke(); };
+    curve(mb, C.blue, 2, 1); curve(tn, C.sun, 2, tn(Emax)); 
+    c.fillStyle = C.acc; c.globalAlpha = 0.18; c.beginPath(); c.moveTo(X(0), Y(0)); for (let i = 1; i <= 300; i++) { const E = Emax * i / 300; c.lineTo(X(E), Y(pr(E) / peak * 0.9)); } c.lineTo(X(Emax), Y(0)); c.fill(); c.globalAlpha = 1;
+    curve(E => pr(E) / peak * 0.9, C.acc, 2.4, 1);
+    line(c, X(E0), box[1], X(E0), box[1] + box[3], C.acc, 1, [4, 4]); text(c, 'E₀', X(E0) + 4, box[1] + 12, C.acc);
+    line(c, X(kT), box[1] + box[3] - 30, X(kT), box[1] + box[3], C.blue, 1); text(c, 'kT', X(kT) + 3, box[1] + box[3] - 24, C.blue);
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => text(c, fmt(Emax * f, 0), X(Emax * f), box[1] + box[3] + 14, C.muted, 'center'));
+    text(c, 'energi relatif (keV)', box[0] + box[2] / 2, box[1] + box[3] + 32, C.fg, 'center');
+    text(c, 'Maxwell–Boltzmann', box[0] + 6, box[1] + 22, C.blue); text(c, 'terowongan', box[0] + box[2] - 6, box[1] + 22, C.sun, 'right');
+    const barrier = 1.44 * Z1 * Z2 / (1.2 * (Math.cbrt(Z1 === 1 ? 1 : 4) + Math.cbrt(Z2 === 1 ? 1 : Z2 === 6 ? 12 : 4))) * 1000; // keV
+    const rate = E0 ** 2 * Math.exp(-3 * E0 / kT);
+    return { kT: fmt(kT, 2) + ' keV', E0: fmt(E0, 1) + ' keV (' + fmt(E0 / kT, 1) + ' kT)', bar: '≈ ' + fmt(barrier, 0) + ' keV (' + fmt(barrier / E0, 0) + '× E₀)', sens: 'laju ∝ T^' + fmt((3 * E0 / kT - 2) / 3, 1) };
+  },
+  outputs: [['kT', 'Energi termal rata-rata kT'], ['E0', 'Puncak Gamow E₀'], ['bar', 'Tinggi penghalang Coulomb'], ['sens', 'Kepekaan laju terhadap suhu']]
+});
+
+/* ---------- pp-I chain ---------- */
+F.ppchain = () => {
+  const P = (x, y) => `<circle class="f-warn-fill" cx="${x}" cy="${y}" r="7"/>`, N = (x, y) => `<circle class="f-blue-fill" cx="${x}" cy="${y}" r="7"/>`;
+  const nuc = (x, y, np, nn) => { let b = ''; const pts = [[-5, -5], [5, 5], [5, -5], [-5, 5]]; for (let i = 0; i < np + nn; i++) b += (i < np ? P : N)(x + pts[i][0], y + pts[i][1]); return b; };
+  const ar = (x1, x2, y) => `<line class="f-line" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="url(#ahp)"/>`;
+  let b = `<defs><marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" class="f-mut-fill"/></marker></defs>`;
+  const row = (y, l, eq, out) => txt(16, y + 4, l, 'f-txt f-b', 'start') + txt(310, y + 4, eq, 'f-txt f-mut-t', 'start') + out;
+  b += row(40, '①', '~10¹⁰ tahun', nuc(70, 40, 1, 0) + txt(92, 44, '+') + nuc(110, 40, 1, 0) + ar(130, 180, 40) + nuc(200, 40, 1, 1) + txt(222, 44, '+ e⁺ + ν', 'f-txt f-acc-t', 'start'));
+  b += row(96, '②', '~1 detik', nuc(70, 96, 1, 1) + txt(92, 100, '+') + nuc(110, 96, 1, 0) + ar(130, 180, 96) + nuc(200, 96, 2, 1) + txt(222, 100, '+ γ', 'f-txt f-acc-t', 'start'));
+  b += row(152, '③', '~10⁶ tahun', nuc(70, 152, 2, 1) + txt(92, 156, '+') + nuc(110, 152, 2, 1) + ar(130, 180, 152) + nuc(200, 152, 2, 2) + txt(224, 156, '+', 'f-txt', 'start') + nuc(246, 152, 1, 0) + nuc(272, 152, 1, 0));
+  b += txt(16, 196, 'Langkah ① dan ② terjadi dua kali sebelum ③.', 'f-txt', 'start') + txt(16, 216, 'Bersih: 4 ¹H → ⁴He + 2e⁺ + 2ν + 26,7 MeV (0,7% massa).', 'f-txt f-b', 'start');
+  b += P(24, 242) + txt(36, 246, 'proton', 'f-txt', 'start') + N(104, 242) + txt(116, 246, 'neutron', 'f-txt', 'start');
+  return svg(470, 258, b, 'Rantai proton–proton', 'Langkah pertama memerlukan gaya lemah (sebuah proton berubah menjadi neutron), itulah sebab Matahari "membakar" begitu pelan dan hidup 10 miliar tahun.');
+};
 })();
