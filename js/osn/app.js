@@ -11,8 +11,11 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ---------- MathJax ---------- */
-const typeset = node => { const MJ = window.MathJax; if (MJ && MJ.typesetPromise) MJ.typesetPromise([node]).catch(() => {}); else (window.__mjq = window.__mjq || []).push(node); };
-window.__mjReady = () => { (window.__mjq || []).forEach(n => window.MathJax.typesetPromise([n]).catch(() => {})); window.__mjq = []; };
+/* long inline formulas cannot line-break in MathJax 3: let them scroll inside their own box instead of widening the page */
+const fitMath = node => node && node.querySelectorAll && node.querySelectorAll('mjx-container:not([display="true"])').forEach(m => { const p = m.parentElement; if (p && p.clientWidth && m.getBoundingClientRect().width > p.clientWidth) m.classList.add('mjx-wide'); });
+const typeset = node => { const MJ = window.MathJax; if (MJ && MJ.typesetPromise) MJ.typesetPromise([node]).then(() => fitMath(node)).catch(() => {}); else (window.__mjq = window.__mjq || []).push(node); };
+window.__mjReady = () => { (window.__mjq || []).forEach(n => window.MathJax.typesetPromise([n]).then(() => fitMath(n)).catch(() => {})); window.__mjq = []; };
+window.addEventListener('resize', () => { clearTimeout(fitMath.t); fitMath.t = setTimeout(() => fitMath(document.querySelector('main')), 300); });
 
 /* ---------- number parsing for answers (accepts 6,03e24 · 6.03 × 10^24 · 35 786 · 16.200) ---------- */
 function parseNum(str) {
@@ -94,7 +97,7 @@ function problemCard(x, opt = {}) {
 function buildNav() {
   nav.innerHTML = `<a href="#beranda" data-r="beranda" class="nav-home">Beranda</a><p class="nav-h">Bab materi</p>` +
     CH.map(ch => `<a href="#${ch.id}" data-r="${ch.id}"><span class="nno">${String(ch.no).padStart(2, '0')}</span><span class="nt">${ch.short}</span><span class="npg" data-pg="${ch.id}"></span></a>`).join('') +
-    `<p class="nav-h">Latihan</p><a href="#ulang" data-r="ulang">Ulangi yang salah <span class="count" id="missCount"></span></a><a href="#paket" data-r="paket">Paket latihan campuran</a><a href="#konstanta" data-r="konstanta">Tabel konstanta & data</a><p class="nav-h">Situs utama</p><a href="index.html">Cosmic Ladder 3D ↗</a>`;
+    `<p class="nav-h">Latihan</p><a href="#ulang" data-r="ulang">Ulangi yang salah <span class="count" id="missCount"></span></a><a href="#paket" data-r="paket">Paket latihan campuran</a><a href="#konstanta" data-r="konstanta">Tabel konstanta & data</a><p class="nav-h">Pembahasan buku</p><a href="#hans" data-r="hans">Diktat Hans (2006)</a><p class="nav-h">Situs utama</p><a href="index.html">Cosmic Ladder 3D ↗</a>`;
   updateNavCounts();
 }
 function updateNavCounts() {
@@ -228,9 +231,10 @@ function viewConst() {
 function route() {
   const h = (location.hash || '#beranda').slice(1), ch = CH.find(c => c.id === h);
   clearInterval(timerId);
-  if (ch) viewChapter(ch); else if (h === 'ulang') viewReview(); else if (h === 'paket') viewPaket(); else if (h === 'konstanta') viewConst(); else viewHome();
-  setActive(ch ? ch.id : (['ulang', 'paket', 'konstanta'].includes(h) ? h : 'beranda'));
-  document.title = (ch ? `Bab ${ch.no}: ${ch.short} · ` : '') + 'OSN Astronomy Academy';
+  let hans = false;
+  if (ch) viewChapter(ch); else if (h === 'ulang') viewReview(); else if (h === 'paket') viewPaket(); else if (h === 'konstanta') viewConst(); else if (h.startsWith('hans') && OSN.viewHans && OSN.viewHans(h, main, { el, esc, typeset })) hans = true; else viewHome();
+  setActive(ch ? ch.id : hans ? 'hans' : (['ulang', 'paket', 'konstanta'].includes(h) ? h : 'beranda'));
+  document.title = (ch ? `Bab ${ch.no}: ${ch.short} · ` : hans ? 'Diktat Hans · ' : '') + 'OSN Astronomy Academy';
   window.scrollTo(0, 0); document.body.classList.remove('navopen');
   typeset(main);
 }

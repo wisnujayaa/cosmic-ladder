@@ -11,5 +11,6 @@ window.OSN = (function () {
     wid: (p, t) => [`Wikipedia · ${t}`, 'https://id.wikipedia.org/wiki/' + p, 'Ensiklopedia (ID)'],
     web: (t, u, k) => [t, u, k || 'Situs web']
   };
-  return { CH, FIG, LAB, L, R: String.raw, add: c => CH.push(c) };
+  const HANS = [];
+  return { CH, FIG, LAB, L, HANS, R: String.raw, add: c => CH.push(c), hans: c => HANS.push(c) };
 })();

@@ -433,4 +433,5 @@ LAB.teleskop = el => {
     }
   });
 };
+OSN.labkit = { mkLab, line, disc, ring, text, axes, fmt, css };
 })();
