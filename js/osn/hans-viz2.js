@@ -327,4 +327,87 @@ F.ppchain = () => {
   b += P(24, 242) + txt(36, 246, 'proton', 'f-txt', 'start') + N(104, 242) + txt(116, 246, 'neutron', 'f-txt', 'start');
   return svg(470, 258, b, 'Rantai proton–proton', 'Langkah pertama memerlukan gaya lemah (sebuah proton berubah menjadi neutron), itulah sebab Matahari "membakar" begitu pelan dan hidup 10 miliar tahun.');
 };
+
+/* ---------- Milky Way anatomy (edge-on + face-on) ---------- */
+F.galaksi = () => {
+  let b = '';
+  // edge-on
+  const ex = 160, ey = 120;
+  b += `<ellipse class="f-line f-dash" cx="${ex}" cy="${ey}" rx="140" ry="98"/>`;
+  b += `<ellipse class="f-blue-fill" style="opacity:.35" cx="${ex}" cy="${ey}" rx="128" ry="7"/><ellipse class="f-warn-fill" style="opacity:.55" cx="${ex}" cy="${ey}" rx="26" ry="17"/>`;
+  [[60, 60], [250, 70], [90, 190], [220, 175], [150, 34], [40, 130], [275, 140], [170, 205]].forEach(([x, y]) => { b += `<circle class="f-acc-fill" cx="${x}" cy="${y}" r="3.5"/>`; });
+  b += `<circle class="f-sun" cx="${ex + 85}" cy="${ey}" r="4"/>` + txt(ex + 85, ey - 12, 'Matahari', 'f-txt');
+  b += txt(ex, 14, 'tampak samping (edge-on)', 'f-txt f-b') + txt(ex - 98, ey + 22, 'piringan', 'f-txt f-blue-t') + txt(ex, ey + 34, 'tonjolan', 'f-txt f-warn-t') + txt(ex + 120, 50, 'halo + gugus bola', 'f-txt f-acc-t');
+  // face-on spiral
+  const fx = 470, fy = 120;
+  b += `<circle class="f-line f-thin" cx="${fx}" cy="${fy}" r="104"/>`;
+  for (let arm = 0; arm < 2; arm++) { let d = ''; for (let i = 0; i <= 60; i++) { const t = i / 60 * 3.4, r = 18 + 26 * t, a = t * 1.15 + arm * Math.PI; d += (i ? 'L' : 'M') + (fx + r * Math.cos(a)).toFixed(1) + ' ' + (fy + r * Math.sin(a)).toFixed(1); } b += `<path class="f-blue" style="stroke-width:9;opacity:.35" d="${d}"/>`; }
+  b += `<ellipse class="f-warn-fill" style="opacity:.6" cx="${fx}" cy="${fy}" rx="24" ry="14" transform="rotate(25 ${fx} ${fy})"/>`;
+  const sa = 2.35, sr = 68; b += `<circle class="f-sun" cx="${(fx + sr * Math.cos(sa)).toFixed(1)}" cy="${(fy + sr * Math.sin(sa)).toFixed(1)}" r="4"/>` + txt(fx + sr * Math.cos(sa) - 6, fy + sr * Math.sin(sa) + 16, 'Matahari (8,2 kpc)', 'f-txt', 'end');
+  b += txt(fx, 14, 'tampak atas (face-on)', 'f-txt f-b') + txt(fx + 60, fy - 70, 'lengan spiral', 'f-txt f-blue-t') + txt(fx, fy + 4, 'batang', 'f-txt f-warn-t');
+  return svg(600, 232, b, 'Struktur Galaksi Bimasakti', 'Piringan (Ø ~30 kpc, tebal ~0,3–1 kpc): bintang populasi I, gas, debu, lengan spiral, gugus terbuka. Tonjolan/batang (Ø ~2–4 kpc) dengan lubang hitam Sgr A* (4 × 10⁶ M☉). Halo bulat (Ø ~100 kpc): bintang populasi II tua dan ~150 gugus bola dengan orbit acak; di luarnya halo materi gelap.');
+};
+
+/* ---------- Hubble tuning fork ---------- */
+F.garputala = () => {
+  const ell = (x, y, e, l) => `<ellipse class="f-warn-fill" style="opacity:.7" cx="${x}" cy="${y}" rx="18" ry="${(18 * (1 - e)).toFixed(1)}"/>` + txt(x, y + 32, l, 'f-txt f-b');
+  const spi = (x, y, bar, k, l) => { let d = ''; for (let arm = 0; arm < 2; arm++) { for (let i = 0; i <= 30; i++) { const t = i / 30 * 2.6, r = (bar ? 9 : 5) + (k === 'a' ? 5 : k === 'b' ? 7 : 9) * t, a = t * (k === 'a' ? 1.9 : k === 'b' ? 1.3 : 0.9) + arm * Math.PI; d += (i ? 'L' : 'M') + (x + r * Math.cos(a)).toFixed(1) + ' ' + (y + 0.55 * r * Math.sin(a)).toFixed(1); } } return `<path class="f-blue" d="${d}"/>` + (bar ? `<line class="f-warn" style="stroke-width:4" x1="${x - 10}" y1="${y}" x2="${x + 10}" y2="${y}"/>` : '') + `<ellipse class="f-warn-fill" cx="${x}" cy="${y}" rx="${k === 'a' ? 7 : k === 'b' ? 5 : 3}" ry="${k === 'a' ? 4 : 3}"/>` + txt(x, y + 32, l, 'f-txt f-b'); };
+  let b = ell(40, 120, 0, 'E0') + ell(100, 120, 0.3, 'E3') + ell(160, 120, 0.7, 'E7');
+  b += `<ellipse class="f-warn-fill" style="opacity:.6" cx="240" cy="120" rx="22" ry="6"/><ellipse class="f-line" cx="240" cy="120" rx="34" ry="9" fill="none"/>` + txt(240, 152, 'S0', 'f-txt f-b');
+  b += `<line class="f-line" x1="280" y1="120" x2="310" y2="60"/><line class="f-line" x1="280" y1="120" x2="310" y2="180"/>`;
+  b += spi(350, 60, 0, 'a', 'Sa') + spi(430, 60, 0, 'b', 'Sb') + spi(510, 60, 0, 'c', 'Sc');
+  b += spi(350, 180, 1, 'a', 'SBa') + spi(430, 180, 1, 'b', 'SBb') + spi(510, 180, 1, 'c', 'SBc');
+  b += txt(100, 30, 'eliptik', 'f-txt f-mut-t') + txt(430, 18, 'spiral normal', 'f-txt f-mut-t') + txt(430, 232, 'spiral berbatang', 'f-txt f-mut-t');
+  b += `<line class="f-line f-dash" x1="340" y1="248" x2="520" y2="248" marker-end="url(#ahm2)"/><defs><marker id="ahm2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" class="f-mut-fill"/></marker></defs>` + txt(430, 266, 'tonjolan mengecil, lengan melonggar, gas bertambah', 'f-txt f-mut-t');
+  return svg(560, 276, b, 'Diagram garpu tala Hubble', 'Angka En = 10(1 − b/a) menyatakan kepipihan tampak. Hubble menyusunnya kiri ke kanan, tetapi ini klasifikasi bentuk, bukan urutan evolusi. Irregular (Ir) berada di luar garpu tala.');
+};
+
+/* ---------- Winding problem vs density wave ---------- */
+LAB.lengan = el => {
+  let s = 5; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, stars = [];
+  for (let i = 0; i < 900; i++) stars.push({ r: 0.12 + 0.88 * Math.sqrt(rnd()), a: rnd() * TAU });
+  return mkLab(el, {
+    title: 'Masalah lilitan vs gelombang kerapatan', hint: 'Kurva rotasi galaksi datar: v hampir tetap, sehingga bintang dalam beredar jauh lebih cepat (ω = v/r). Mode "lengan material": bintang yang mula-mula membentuk lengan akan tergulung makin rapat. Mode "gelombang kerapatan": pola spiral berputar dengan laju pola sendiri; bintang hanya melambat dan berdesakan saat melintasinya, seperti kemacetan di jalan tol.', aspect: 0.7, anim: true,
+    controls: [{ k: 'mode', label: 'Gelombang kerapatan (bukan lengan material)', type: 'toggle', val: false }, { k: 'sp', label: 'Kecepatan waktu', min: 0.1, max: 3, step: 0.05, val: 1, fmt: x => fmt(x, 2) + '×' }],
+    reset: () => {},
+    draw(c, W, H, v, C, t) {
+      const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.46, T = t * v.sp * 0.6;
+      disc(c, cx, cy, R * 0.12, C.warn);
+      const om = r => 1 / Math.max(r, 0.15), patt = 0.6;
+      stars.forEach(st => {
+        let a, inArm;
+        if (!v.mode) { a = st.a + om(st.r) * T; const a0 = st.a, armPhase = (a0 - Math.log(st.r) * 2.2) % Math.PI; inArm = Math.abs(((armPhase + TAU) % Math.PI) - Math.PI / 2) < 0.22; }
+        else { a = st.a + om(st.r) * T; const rel = a - patt * T, ph = (((rel - Math.log(st.r) * 2.2) % Math.PI) + Math.PI) % Math.PI; const dens = Math.cos(2 * (ph - Math.PI / 2)); a += -0.12 * Math.sin(2 * (ph - Math.PI / 2)); inArm = dens > 0.75; }
+        const x = cx + R * st.r * Math.cos(a), y = cy + R * st.r * Math.sin(a);
+        disc(c, x, y, inArm ? 2.2 : 1.3, inArm ? (v.mode ? C.blue : C.acc) : C.muted);
+      });
+      const turns = T / (TAU * 0.15) - T / TAU;
+      return { what: v.mode ? 'Pola tetap; bintang biru = di lengan saat ini (berganti-ganti)' : 'Lengan tergulung: selisih putaran dalam–luar ≈ ' + fmt(Math.max(0, turns), 1) + ' kali', T: fmt(T * 37, 0) + ' juta tahun (skala kira-kira)' };
+    },
+    outputs: [['what', 'Yang terlihat'], ['T', 'Waktu']]
+  });
+};
+
+/* ---------- Tangent-point method (21 cm rotation curve) ---------- */
+LAB.tangen = el => mkLab(el, {
+  title: 'Metode titik singgung: memetakan rotasi Galaksi dari dalam', hint: 'Kita di Matahari, memandang ke bujur galaksi l. Garis pandang paling dekat ke pusat galaksi di titik singgung (R = R₀ sin l): di sana seluruh kecepatan orbit gas searah garis pandang, sehingga pergeseran Doppler 21 cm terbesar. Tiap l memberi satu titik kurva rotasi.', aspect: 0.62,
+  controls: [{ k: 'l', label: 'Bujur galaksi l', min: 5, max: 85, step: 1, val: 30, unit: '°', fmt: x => fmt(x, 0) }, { k: 'R0', label: 'Jarak Matahari ke pusat R₀', min: 7, max: 9, step: 0.1, val: 8.5, unit: 'kpc', fmt: x => fmt(x, 1) }],
+  presets: [{ label: 'l = 30° (soal 12)', set: { l: 30, R0: 8.5 } }, { label: 'l = 60°', set: { l: 60 } }],
+  draw(c, W, H, v, C) {
+    const sc = Math.min(W * 0.62, H * 0.8) / v.R0, gx = W * 0.2, gy = H * 0.88, sx = gx + v.R0 * sc, sy = gy, l = v.l * D2R;
+    ring(c, gx, gy, v.R0 * sc, C.line, 1, [3, 5]);
+    disc(c, gx, gy, 7, C.warn); text(c, 'pusat Galaksi', gx + 10, gy + 16, C.muted);
+    disc(c, sx, sy, 5, C.sun); text(c, 'Matahari', sx - 6, sy + 16, C.sun, 'right');
+    const dx = -Math.cos(l), dy = -Math.sin(l), Lmax = v.R0 * 1.9 * sc;
+    line(c, sx, sy, sx + dx * Lmax, sy + dy * Lmax, C.muted, 1, [6, 4]);
+    const r = v.R0 * Math.cos(l), R = v.R0 * Math.sin(l), tx = sx + dx * r * sc, ty = sy + dy * r * sc;
+    ring(c, gx, gy, R * sc, C.blue, 1.4);
+    line(c, gx, gy, tx, ty, C.blue, 1.4); disc(c, tx, ty, 5, C.acc);
+    arrow(c, tx, ty, tx + dx * 46, ty + dy * 46, C.acc, 2); text(c, 'v orbit ∥ garis pandang', tx + dx * 50 + 4, ty + dy * 50, C.acc);
+    text(c, 'l', sx - 28, sy - 6, C.fg);
+    const v0 = 220, vr = v0 * (1 - Math.sin(l)); // flat curve: v_r,max = v(R) - v0 sin l
+    return { r: fmt(r, 2) + ' kpc', R: fmt(R, 2) + ' kpc', vr: 'v(R) − V₀ sin l = ' + fmt(vr, 0) + ' km/s (untuk kurva datar 220 km/s)' };
+  },
+  outputs: [['r', 'Jarak titik singgung dari Matahari r = R₀ cos l'], ['R', 'Jarak dari pusat R = R₀ sin l'], ['vr', 'Kecepatan radial maksimum']]
+});
 })();
