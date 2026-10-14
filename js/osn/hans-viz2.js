@@ -484,4 +484,74 @@ F.geometri = () => {
   b += txt(470, 186, 'lengkung negatif', 'f-txt f-b') + txt(470, 204, 'Ω < 1, terbuka', 'f-txt f-mut-t') + txt(470, 222, 'Σ sudut < 180°', 'f-txt f-acc-t');
   return svg(560, 232, b, 'Tiga geometri alam semesta', 'Analogi dua dimensi: permukaan bola, bidang, dan pelana. Pengukuran fluktuasi CMB (WMAP, Planck) menunjukkan alam semesta kita sangat dekat dengan datar: Ω_total = 1,00 ± 0,002.');
 };
+
+/* ---------- Telescope optical layouts ---------- */
+F.teleskoptipe = () => {
+  const ray = (pts, cls = 'f-warn') => `<polyline class="${cls}" fill="none" points="${pts.map(p => p.join(',')).join(' ')}"/>`;
+  let b = '';
+  // refractor
+  b += txt(20, 22, 'Refraktor (lensa)', 'f-txt f-b', 'start');
+  b += `<ellipse class="f-blue" cx="60" cy="70" rx="5" ry="30" fill="none"/><line class="f-line f-thin" x1="20" y1="70" x2="250" y2="70"/>`;
+  [-22, 0, 22].forEach(y => { b += ray([[20, 70 + y], [60, 70 + y], [200, 70]]); });
+  b += `<circle class="f-acc-fill" cx="200" cy="70" r="3"/>` + txt(200, 90, 'fokus', 'f-txt f-acc-t') + `<ellipse class="f-blue" cx="230" cy="70" rx="3" ry="9" fill="none"/>` + txt(232, 54, 'okuler', 'f-txt f-mut-t');
+  // Newtonian
+  b += txt(290, 22, 'Newtonian', 'f-txt f-b', 'start');
+  b += `<path class="f-blue f-strong" d="M 500 38 Q 510 70 500 102" fill="none"/><line class="f-line f-thin" x1="290" y1="70" x2="505" y2="70"/><line class="f-line" x1="370" y1="62" x2="386" y2="78"/>`;
+  [-24, 24].forEach(y => { b += ray([[290, 70 + y], [502, 70 + y], [378, 70], [378, 30]]); });
+  b += `<circle class="f-acc-fill" cx="378" cy="30" r="3"/>` + txt(392, 34, 'fokus (samping tabung)', 'f-txt f-acc-t', 'start') + txt(500, 118, 'cermin primer parabola', 'f-txt f-mut-t', 'end');
+  // Cassegrain
+  b += txt(20, 152, 'Cassegrain (Schmidt-Cassegrain: + pelat koreksi di depan)', 'f-txt f-b', 'start');
+  b += `<path class="f-blue f-strong" d="M 220 168 Q 230 200 220 232" fill="none"/><line class="f-line f-thin" x1="20" y1="200" x2="280" y2="200"/><path class="f-blue f-strong" d="M 112 190 Q 108 200 112 210" fill="none"/>`;
+  [-26, 26].forEach(y => { b += ray([[20, 200 + y], [222, 200 + y], [112, 200 + y * 0.28], [262, 200]]); });
+  b += `<rect class="f-line" x="214" y="194" width="10" height="12" fill="none"/><circle class="f-acc-fill" cx="262" cy="200" r="3"/>` + txt(262, 222, 'fokus', 'f-txt f-acc-t') + txt(112, 240, 'sekunder cembung', 'f-txt f-mut-t');
+  ['Cermin: tanpa aberasi kromatik,', 'ditopang dari belakang,', 'bisa sangat besar.', 'Lensa: aberasi kromatik,', 'melendut, menyerap UV;', 'refraktor terbesar ±1 m.'].forEach((t, i) => { b += txt(310, 172 + i * 17 + (i > 2 ? 6 : 0), t, i === 0 || i === 3 ? 'f-txt f-b' : 'f-txt', 'start'); });
+  return svg(560, 272, b, 'Jenis teleskop optik', 'Cassegrain melipat jalur cahaya sehingga panjang fokus besar dalam tabung pendek; Schmidt memberi medan pandang lebar untuk survei.');
+};
+
+/* ---------- Diffraction: Airy pattern and the Rayleigh criterion ---------- */
+LAB.difraksi = el => mkLab(el, {
+  title: 'Daya pisah: kapan dua bintang tampak dua?', hint: 'Cahaya bintang (sumber titik) melewati bukaan bundar menjadi pola Airy: cakram pusat dengan cincin-cincin redup. Dua bintang terpisah bila jaraknya ≥ jari-jari cakram pusat, θ = 1,22 λ/D (kriteria Rayleigh). Di Bumi, turbulensi udara (seeing ~1″) biasanya lebih membatasi daripada difraksi.', aspect: 0.55,
+  controls: [{ k: 'sep', label: 'Jarak sudut kedua bintang', min: 0.05, max: 3, step: 0.01, val: 1.0, unit: '″', fmt: x => fmt(x, 2) }, { k: 'D', label: 'Diameter bukaan D', min: 20, max: 1000, log: true, val: 120, unit: 'mm', fmt: x => fmt(x, 0) }, { k: 'lam', label: 'Panjang gelombang λ', min: 400, max: 700, step: 5, val: 550, unit: 'nm', fmt: x => fmt(x, 0) }, { k: 'see', label: 'Tambahkan seeing 1″ (atmosfer)', type: 'toggle', val: false }],
+  presets: [{ label: 'Teropong 50 mm', set: { D: 50 } }, { label: 'Teleskop 120 mm, 1″', set: { D: 120, sep: 1 } }, { label: 'Bosscha 600 mm', set: { D: 600, sep: 0.3 } }],
+  draw(c, W, H, v, C) {
+    const th = 1.22 * v.lam * 1e-9 / (v.D / 1000) * 206265, sig = v.see ? 1 / 2.355 : 0;
+    const J1 = x => { if (x > 12) return Math.sqrt(2 / (Math.PI * x)) * Math.cos(x - 3 * Math.PI / 4); let s = 0, k = 0; const h = x / 2; for (k = 0; k < 30; k++) { s += (k % 2 ? -1 : 1) * Math.pow(h, 2 * k + 1) / (fac(k) * fac(k + 1)); } return s; }, fac = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
+    const airy = x => { const u = 3.8317 * x / th; if (Math.abs(u) < 1e-6) return 1; if (Math.abs(u) > 25) return 0; const j = 2 * J1(u) / u; return j * j; };
+    const prof = x => { if (!sig) return airy(x); let s = 0, n = 0; for (let k = -12; k <= 12; k++) { const d = k * sig / 4, w = Math.exp(-d * d / (2 * sig * sig)); s += w * airy(x - d); n += w; } return s / n; };
+    const span = Math.max(3 * th, v.sep * 1.6, sig ? 3 : 0), box = [30, 16, W - 60, H * 0.62], X = q => box[0] + box[2] / 2 + q / span * box[2] / 2, Y = q => box[1] + box[3] * (1 - q / 1.05);
+    c.strokeStyle = C.line; c.strokeRect(box[0], box[1], box[2], box[3]);
+    const f1 = x => prof(x + v.sep / 2), f2 = x => prof(x - v.sep / 2);
+    let peak = 0; for (let i = 0; i <= 300; i++) { const x = -span + 2 * span * i / 300; peak = Math.max(peak, f1(x) + f2(x)); }
+    [[f1, C.blue], [f2, C.warn], [x => f1(x) + f2(x), C.acc]].forEach(([f, col], j) => { c.strokeStyle = col; c.lineWidth = j === 2 ? 2.4 : 1.3; c.beginPath(); for (let i = 0; i <= 300; i++) { const x = -span + 2 * span * i / 300, y = f(x) / peak; i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)); } c.stroke(); });
+    const dip = (f1(0) + f2(0)) / peak;
+    // 2D image strip
+    const iy = box[1] + box[3] + 12, ih = H - iy - 8, iw = ih * 2.2, ix = W / 2 - iw / 2, img = c.createImageData(Math.max(1, Math.round(iw)), Math.max(1, Math.round(ih)));
+    for (let yy = 0; yy < img.height; yy++) for (let xx = 0; xx < img.width; xx++) { const ax = (xx / img.width - 0.5) * 2 * span * (iw / box[2]) * (box[2] / iw), ay = (yy / img.height - 0.5) * 2 * span * (ih / iw), r1 = Math.hypot(ax + v.sep / 2, ay), r2 = Math.hypot(ax - v.sep / 2, ay), I = Math.min(1, Math.sqrt((prof(r1) + prof(r2)) / peak)), o = 4 * (yy * img.width + xx); img.data[o] = img.data[o + 1] = 255 * I; img.data[o + 2] = 235 * I + 20 * I; img.data[o + 3] = 255; }
+    c.putImageData(img, Math.round(ix), Math.round(iy));
+    const res = v.sep >= th * 0.999 && (!sig || v.sep >= 1), lim = v.see ? Math.max(th, 1) : th;
+    return { th: fmt(th, 3) + '″ (≈ 140/D mm)', lim: fmt(lim, 2) + '″' + (v.see && th < 1 ? ' (dibatasi seeing)' : ''), dip: dip < 0.99 ? 'lembah ' + fmt(dip * 100, 0) + '% dari puncak' : 'tak ada lembah', res: dip < 0.81 ? 'terpisah jelas' : dip < 0.99 ? 'baru terpisah (≈ batas Rayleigh)' : 'melebur jadi satu' };
+  },
+  outputs: [['th', 'Batas difraksi 1,22 λ/D'], ['lim', 'Daya pisah efektif'], ['dip', 'Kecerlangan di tengah'], ['res', 'Hasil']]
+});
+
+/* ---------- Aperture photometry on the book's CCD frame ---------- */
+LAB.fotometri = el => {
+  const G = [[236, 253, 269, 233, 267, 281, 251, 285, 296], [286, 239, 291, 256, 250, 249, 264, 261, 282], [268, 275, 230, 263, 848, 257, 251, 250, 256], [268, 265, 269, 862, 982, 854, 268, 264, 261], [274, 279, 877, 951, 1509, 975, 878, 268, 272], [234, 246, 248, 831, 993, 851, 257, 254, 259], [267, 262, 281, 282, 863, 264, 260, 244, 248], [245, 244, 240, 230, 268, 245, 248, 269, 265], [246, 247, 268, 262, 271, 269, 260, 248, 241]];
+  return mkLab(el, {
+    title: 'Fotometri apertur pada citra CCD', hint: 'Data cacah 9×9 piksel dari contoh buku. Lingkaran dalam (apertur) memuat cahaya bintang + langit; cincin luar dipakai untuk menaksir langit per piksel. Cahaya bintang = jumlah di apertur − (rata-rata langit × jumlah piksel apertur). Coba kecilkan apertur sampai sebagian cahaya bintang terbuang.', aspect: 0.62,
+    controls: [{ k: 'r', label: 'Jari-jari apertur', min: 0.5, max: 3, step: 0.1, val: 2.1, unit: 'piksel', fmt: x => fmt(x, 1) }, { k: 'r1', label: 'Cincin langit, jari-jari dalam', min: 2.15, max: 4, step: 0.05, val: 2.2, unit: 'piksel', fmt: x => fmt(x, 1) }, { k: 'r2', label: 'Cincin langit, jari-jari luar', min: 3, max: 6, step: 0.1, val: 6, unit: 'piksel', fmt: x => fmt(x, 1) }],
+    presets: [{ label: 'Seperti buku', set: { r: 2.1, r1: 2.2, r2: 6 } }, { label: 'Apertur terlalu kecil', set: { r: 1.0 } }],
+    draw(c, W, H, v, C) {
+      const n = 9, cs = Math.min((W - 20) / n * 0.62, (H - 20) / n), ox = 10, oy = (H - cs * n) / 2;
+      let sky = 0, ns = 0, sum = 0, na = 0;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const d = Math.hypot(i - 4, j - 4), val = G[i][j]; if (d <= v.r) { sum += val; na++; } else if (d >= v.r1 && d <= v.r2) { sky += val; ns++; } }
+      const mean = ns ? sky / ns : 0, star = sum - mean * na;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const val = G[i][j], t = Math.min(1, Math.max(0, (Math.log(val) - Math.log(220)) / (Math.log(1509) - Math.log(220)))), g = Math.round(20 + 235 * t); c.fillStyle = `rgb(${g},${g},${Math.min(255, g + 15)})`; c.fillRect(ox + j * cs, oy + i * cs, cs - 1, cs - 1); const d = Math.hypot(i - 4, j - 4); text(c, String(val), ox + j * cs + cs / 2, oy + i * cs + cs / 2, t > 0.5 ? '#111' : '#ddd', 'center', `${Math.max(8, Math.min(11, cs / 3.6))}px ${C.mono}`); if (d <= v.r) { c.strokeStyle = C.acc; c.lineWidth = 2; c.strokeRect(ox + j * cs + 1, oy + i * cs + 1, cs - 3, cs - 3); } else if (d >= v.r1 && d <= v.r2) { c.fillStyle = C.blue; c.globalAlpha = 0.18; c.fillRect(ox + j * cs, oy + i * cs, cs - 1, cs - 1); c.globalAlpha = 1; } }
+      c.font = `12px ${C.ui}`;
+      const cx = ox + 4.5 * cs, cy = oy + 4.5 * cs; ring(c, cx, cy, v.r * cs, C.acc, 1.5); ring(c, cx, cy, v.r1 * cs, C.blue, 1, [4, 3]); ring(c, cx, cy, v.r2 * cs, C.blue, 1, [4, 3]);
+      return { sky: fmt(mean, 1) + ' per piksel (' + ns + ' piksel)', ap: na + ' piksel, jumlah ' + fmt(sum, 0), star: fmt(star, 0) + ' cacah', m: fmt(-2.5 * Math.log10(Math.max(star, 1)), 2) + ' (magnitudo instrumen)' };
+    },
+    outputs: [['sky', 'Langit rata-rata'], ['ap', 'Apertur'], ['star', 'Cahaya bintang'], ['m', 'm_ins = −2,5 log C']]
+  });
+};
 })();
