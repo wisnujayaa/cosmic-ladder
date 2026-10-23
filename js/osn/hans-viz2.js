@@ -527,7 +527,7 @@ LAB.difraksi = el => mkLab(el, {
     // 2D image strip
     const iy = box[1] + box[3] + 12, ih = H - iy - 8, iw = ih * 2.2, ix = W / 2 - iw / 2, img = c.createImageData(Math.max(1, Math.round(iw)), Math.max(1, Math.round(ih)));
     for (let yy = 0; yy < img.height; yy++) for (let xx = 0; xx < img.width; xx++) { const ax = (xx / img.width - 0.5) * 2 * span * (iw / box[2]) * (box[2] / iw), ay = (yy / img.height - 0.5) * 2 * span * (ih / iw), r1 = Math.hypot(ax + v.sep / 2, ay), r2 = Math.hypot(ax - v.sep / 2, ay), I = Math.min(1, Math.sqrt((prof(r1) + prof(r2)) / peak)), o = 4 * (yy * img.width + xx); img.data[o] = img.data[o + 1] = 255 * I; img.data[o + 2] = 235 * I + 20 * I; img.data[o + 3] = 255; }
-    c.putImageData(img, Math.round(ix), Math.round(iy));
+    putImg(c, img, Math.round(ix), Math.round(iy));
     const res = v.sep >= th * 0.999 && (!sig || v.sep >= 1), lim = v.see ? Math.max(th, 1) : th;
     return { th: fmt(th, 3) + '″ (≈ 140/D mm)', lim: fmt(lim, 2) + '″' + (v.see && th < 1 ? ' (dibatasi seeing)' : ''), dip: dip < 0.99 ? 'lembah ' + fmt(dip * 100, 0) + '% dari puncak' : 'tak ada lembah', res: dip < 0.81 ? 'terpisah jelas' : dip < 0.99 ? 'baru terpisah (≈ batas Rayleigh)' : 'melebur jadi satu' };
   },
@@ -838,5 +838,115 @@ LAB.musimgerhana = el => mkLab(el, {
     return { sol: sol.length + ' kali (lunasi ' + (sol.join(', ') || '—') + ')', lun: lun.length + ' kali (lunasi ' + (lun.join(', ') || '—') + ')', span: fmt(v.n * 29.53, 0) + ' hari ≈ ' + fmt(yrs, 2) + ' tahun', saros: '223 lunasi × 30,67° = ' + fmt((223 * step) % 360, 2) + '° lewat 18 putaran → hampir kembali ke posisi sama' };
   },
   outputs: [['sol', 'Gerhana Matahari'], ['lun', 'Gerhana Bulan (umbral)'], ['span', 'Rentang waktu'], ['saros', 'Mengapa Saros berulang']]
+});
+
+const putImg = (c, img, x, y) => { const o = document.createElement('canvas'); o.width = img.width; o.height = img.height; o.getContext('2d').putImageData(img, 0, 0); c.drawImage(o, x, y); };
+OSN.labkit.putImg = putImg;
+
+/* ================= Bab 14: Bintang ganda ================= */
+/* ---------- Binary: sky view + radial-velocity curve + light curve ---------- */
+LAB.ganda = el => {
+  let st = { ph: 0, lt: null };
+  const model = v => {
+    const P = v.P * 86400, Mt = (v.M1 + v.M2) * 1.989e30, a = Math.cbrt(6.674e-11 * Mt * P * P / (4 * Math.PI * Math.PI)), aR = a / 6.957e8; // R☉
+    const si = Math.sin(v.i * D2R), ci = Math.cos(v.i * D2R), w = v.w * D2R, e = v.e;
+    const K = 2 * Math.PI * a * si / (P * Math.sqrt(1 - e * e)) / 1000, K1 = K * v.M2 / (v.M1 + v.M2), K2 = K * v.M1 / (v.M1 + v.M2);
+    const L1 = v.R1 * v.R1 * Math.pow(v.T1 / 5772, 4), L2 = v.R2 * v.R2 * Math.pow(v.T2 / 5772, 4);
+    const ov = (d, r1, r2) => { if (d >= r1 + r2) return 0; if (d <= Math.abs(r1 - r2)) return Math.PI * Math.min(r1, r2) ** 2; const a1 = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1)), a2 = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2)); return a1 + a2 - 0.5 * Math.sqrt(Math.max(0, (-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2))); };
+    const at = phase => {
+      const Mn = TAU * phase; let E = Mn; for (let k = 0; k < 25; k++) E -= (E - e * Math.sin(E) - Mn) / (1 - e * Math.cos(E));
+      const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2)), r = aR * (1 - e * Math.cos(E));
+      const u = nu + w, X = r * Math.cos(u), Y = r * Math.sin(u) * ci, Z = r * Math.sin(u) * si; // star2 relative to star1; Z>0: star2 farther
+      const v1 = K1 * (Math.cos(u) + e * Math.cos(w)), v2 = -K2 * (Math.cos(u) + e * Math.cos(w));
+      const d = Math.hypot(X, Y), o = ov(d, v.R1, v.R2);
+      let F = L1 + L2; if (o > 0) { if (Z > 0) F -= L2 * o / (Math.PI * v.R2 * v.R2); else F -= L1 * o / (Math.PI * v.R1 * v.R1); }
+      return { X, Y, Z, v1, v2, F, r };
+    };
+    return { aR, K1, K2, L1, L2, at, Ftot: L1 + L2 };
+  };
+  return mkLab(el, {
+    title: 'Bintang ganda: orbit, kecepatan radial, kurva cahaya', hint: 'Kiri: sistem tampak di langit (proyeksi), pusat massa di tanda +. Kanan atas: kecepatan radial kedua bintang (biru = bintang 1, jingga = bintang 2; positif = menjauh). Kanan bawah: kurva cahaya. Turunkan inklinasi i di bawah ~80°: gerhana hilang, tetapi kurva kecepatan radial tetap ada (hanya diperkecil sin i). Naikkan e: kurva kecepatan menjadi miring dan kedua minimum tak lagi berjarak setengah periode.', aspect: 0.62, anim: true,
+    controls: [{ k: 'M1', label: 'Massa bintang 1', min: 0.2, max: 10, step: 0.01, val: 2, unit: 'M☉', fmt: x => fmt(x, 2) }, { k: 'M2', label: 'Massa bintang 2', min: 0.1, max: 10, step: 0.01, val: 1, unit: 'M☉', fmt: x => fmt(x, 2) }, { k: 'P', label: 'Periode', min: 0.3, max: 40, step: 0.01, log: true, val: 3, unit: 'hari', fmt: x => fmt(x, 2) }, { k: 'i', label: 'Inklinasi i', min: 0, max: 90, step: 0.1, val: 88, unit: '°', fmt: x => fmt(x, 1) }, { k: 'e', label: 'Eksentrisitas e', min: 0, max: 0.8, step: 0.01, val: 0, fmt: x => fmt(x, 2) }, { k: 'w', label: 'Bujur periastron ω', min: 0, max: 360, step: 1, val: 90, unit: '°', fmt: x => fmt(x, 0) }, { k: 'R1', label: 'Jari-jari bintang 1', min: 0.1, max: 6, step: 0.01, val: 1.8, unit: 'R☉', fmt: x => fmt(x, 2) }, { k: 'R2', label: 'Jari-jari bintang 2', min: 0.1, max: 6, step: 0.01, val: 1.0, unit: 'R☉', fmt: x => fmt(x, 2) }, { k: 'T1', label: 'Suhu bintang 1', min: 3000, max: 20000, step: 50, val: 9000, unit: 'K', fmt: x => fmt(x, 0) }, { k: 'T2', label: 'Suhu bintang 2', min: 3000, max: 20000, step: 50, val: 6000, unit: 'K', fmt: x => fmt(x, 0) }],
+    presets: [{ label: 'Mirip Algol', set: { M1: 3.2, M2: 0.7, P: 2.87, i: 82, e: 0, R1: 2.9, R2: 3.5, T1: 12500, T2: 4500 } }, { label: 'Kembar', set: { M1: 1, M2: 1, P: 2, i: 89, e: 0, R1: 1, R2: 1, T1: 5800, T2: 5800 } }, { label: 'Soal 13', set: { M1: 0.61, M2: 0.46, P: 30, i: 90, e: 0, R1: 0.61, R2: 0.84, T1: 7000, T2: 5000 } }, { label: 'Lonjong (soal 24)', set: { M1: 1.5, M2: 1.2, P: 0.6, i: 87, e: 0.35, w: 70, R1: 0.4, R2: 0.3, T1: 7000, T2: 9000 } }, { label: 'Tak bergerhana', set: { i: 45 } }],
+    draw(c, W, H, v, C, t) {
+      const m = model(v), dt = st.lt == null ? 0 : Math.min(0.05, t - st.lt); st.lt = t; st.ph = (st.ph + dt / 6) % 1;
+      const now = m.at(st.ph);
+      // sky view
+      const sw = W * 0.42, scx = sw / 2, scy = H / 2, f1 = v.M2 / (v.M1 + v.M2), f2 = v.M1 / (v.M1 + v.M2), sc = Math.min(sw * 0.44, H * 0.4) / (Math.max(f1, f2) * m.aR * (1 + v.e) + Math.max(v.R1, v.R2));
+      c.strokeStyle = C.line; c.lineWidth = 1; [f1, f2].forEach((f, j) => { c.beginPath(); for (let k = 0; k <= 120; k++) { const q = m.at(k / 120), s = j ? f : -f; const X = scx + s * q.X * sc, Y = scy - s * q.Y * sc; k ? c.lineTo(X, Y) : c.moveTo(X, Y); } c.stroke(); });
+      line(c, scx - 5, scy, scx + 5, scy, C.muted); line(c, scx, scy - 5, scx, scy + 5, C.muted);
+      const p1 = [scx - f1 * now.X * sc, scy + f1 * now.Y * sc], p2 = [scx + f2 * now.X * sc, scy - f2 * now.Y * sc];
+      const col = T => OSN.labkit.bbColor ? OSN.labkit.bbColor(T) : '#fff';
+      const drawS = (p, R, T) => disc(c, p[0], p[1], Math.max(2, R * sc), col(T));
+      if (now.Z > 0) { drawS(p2, v.R2, v.T2); drawS(p1, v.R1, v.T1); } else { drawS(p1, v.R1, v.T1); drawS(p2, v.R2, v.T2); }
+      text(c, '1', p1[0], p1[1] - v.R1 * sc - 8, C.blue, 'center'); text(c, '2', p2[0], p2[1] - v.R2 * sc - 8, C.warn, 'center');
+      text(c, 'tampak dari Bumi', scx, H - 8, C.muted, 'center');
+      // curves
+      const bx = sw + 46, bw = W - bx - 12, h1 = H * 0.46, b1 = [bx, 10, bw, h1 - 24], b2 = [bx, h1 + 8, bw, H - h1 - 46];
+      const vm = Math.max(10, m.K1 * (1 + v.e), m.K2 * (1 + v.e)) * 1.1;
+      const A1 = OSN.labkit.axes(c, C, b1, [0, 1], [-vm, vm], { yt: [-Math.round(vm / 1.1), 0, Math.round(vm / 1.1)], yl: 'km/s', ylo: 38 });
+      const N = 240, pts = []; for (let k = 0; k <= N; k++) pts.push(m.at(k / N));
+      [['v1', C.blue], ['v2', C.warn]].forEach(([key, cl]) => { c.strokeStyle = cl; c.lineWidth = 2; c.beginPath(); pts.forEach((q, k) => { const X = A1.X(k / N), Y = A1.Y(q[key]); k ? c.lineTo(X, Y) : c.moveTo(X, Y); }); c.stroke(); });
+      const mags = pts.map(q => -2.5 * Math.log10(q.F / m.Ftot)), mx = Math.max(0.05, ...mags) * 1.1;
+      const A2 = OSN.labkit.axes(c, C, b2, [0, 1], [mx, -mx * 0.08], { xt: [0, 0.25, 0.5, 0.75, 1], xf: q => String(q).replace('.', ','), yt: [0, +(mx / 1.1).toFixed(2)], yf: q => '+' + String(q).replace('.', ','), xl: 'fase', yl: 'Δm', ylo: 38 });
+      c.strokeStyle = C.acc; c.lineWidth = 2; c.beginPath(); mags.forEach((q, k) => { const X = A2.X(k / N), Y = A2.Y(q); k ? c.lineTo(X, Y) : c.moveTo(X, Y); }); c.stroke();
+      line(c, A1.X(st.ph), b1[1], A1.X(st.ph), b2[1] + b2[3], C.fg, 1, [3, 3]);
+      const d1 = Math.min(...mags.slice(0, N / 2)), dmax = Math.max(...mags);
+      const ecl = Math.max(...mags) > 0.001;
+      return { a: fmt(m.aR, 2) + ' R☉ = ' + fmt(m.aR * 6.957e5 / 1.496e8, 4) + ' SA', K: 'K₁ = ' + fmt(m.K1, 1) + ', K₂ = ' + fmt(m.K2, 1) + ' km/s (K₁/K₂ = M₂/M₁)', ecl: ecl ? 'minimum utama ' + fmt(dmax, 2) + ' mag' : 'tidak ada gerhana (i terlalu kecil)', fm: fmt(Math.pow(v.M2 * Math.sin(v.i * D2R), 3) / Math.pow(v.M1 + v.M2, 2), 3) + ' M☉' };
+    },
+    outputs: [['a', 'Setengah sumbu panjang (Kepler III)'], ['K', 'Amplitudo kecepatan radial'], ['ecl', 'Gerhana'], ['fm', 'Fungsi massa M₂³sin³i/(M₁+M₂)²']]
+  });
+};
+
+/* ---------- Roche lobes and mass transfer ---------- */
+LAB.rochelobe = el => mkLab(el, {
+  title: 'Cuping Roche dan transfer massa', hint: 'Kontur = permukaan ekipotensial efektif (gravitasi kedua bintang + gaya sentrifugal dalam kerangka yang ikut berputar). Kontur tebal berbentuk angka delapan = cuping Roche, bertemu di titik Lagrange L₁. Perbesar bintang 1 (misalnya karena menjadi raksasa): begitu mengisi cupingnya, materi tumpah lewat L₁ ke bintang 2. Itulah awal paradoks Algol, nova, dan sumber sinar-X.', aspect: 0.6,
+  controls: [{ k: 'q', label: 'Rasio massa M₂/M₁', min: 0.05, max: 1, step: 0.01, val: 0.5, fmt: x => fmt(x, 2) }, { k: 'f', label: 'Ukuran bintang 1 / cuping Roche-nya', min: 0.2, max: 1.15, step: 0.01, val: 0.7, fmt: x => fmt(x, 2) }],
+  presets: [{ label: 'Terpisah', set: { f: 0.6 } }, { label: 'Semi-terpisah (Algol)', set: { f: 1.05, q: 0.3 } }, { label: 'Massa setara', set: { q: 1 } }],
+  draw(c, W, H, v, C) {
+    const q = v.q, mu = q / (1 + q), x1 = -mu, x2 = 1 - mu; // CM at 0, separation 1
+    const Phi = (x, y) => { const r1 = Math.hypot(x - x1, y), r2 = Math.hypot(x - x2, y); return -(1 - mu) / Math.max(r1, 1e-4) - mu / Math.max(r2, 1e-4) - 0.5 * (x * x + y * y); };
+    const dPx = x => (Phi(x + 1e-5, 0) - Phi(x - 1e-5, 0)) / 2e-5;
+    let lo = x1 + 0.02, hi = x2 - 0.02; for (let k = 0; k < 60; k++) { const m = (lo + hi) / 2; if (dPx(lo) * dPx(m) <= 0) hi = m; else lo = m; } const L1 = (lo + hi) / 2, PL1 = Phi(L1, 0);
+    const s = Math.min(W / 2.6, H / 1.5), cx = W / 2 + (mu - 0.5) * s * 0.0, cy = H / 2, img = c.createImageData(W | 0, H | 0);
+    const isDark = !!(C.bg && /^#[0-3]/.test(C.bg));
+    for (let py = 0; py < img.height; py += 1) for (let px = 0; px < img.width; px += 1) {
+      const x = (px - cx) / s + 0.0, y = (cy - py) / s, P = Phi(x, y), o = 4 * (py * img.width + px);
+      const lv = Math.log(-P), band = Math.abs(((lv * 14) % 1 + 1) % 1 - 0.5) < 0.04, inLobe = P < PL1 && Math.abs(x - (x < L1 ? x1 : x2)) < 1.2;
+      let r = isDark ? 20 : 248, g = isDark ? 24 : 247, b = isDark ? 34 : 243;
+      if (inLobe) { if (x < L1) { r -= 10; g -= 4; b += 6; } else { r += 4; g -= 6; b -= 12; } }
+      if (band) { r *= 0.75; g *= 0.75; b *= 0.8; }
+      if (Math.abs(P - PL1) < 0.0035) { r = 200; g = 60; b = 50; }
+      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255;
+    }
+    putImg(c, img, 0, 0);
+    const egg = qq => 0.49 * Math.pow(qq, 2 / 3) / (0.6 * Math.pow(qq, 2 / 3) + Math.log(1 + Math.cbrt(qq)));
+    const RL1 = egg(1 / q), RL2 = egg(q), R1 = v.f * RL1;
+    disc(c, cx + x1 * s, cy, R1 * s, v.f >= 1 ? '#e2683c' : '#f2b33d'); disc(c, cx + x2 * s, cy, Math.max(3, 0.35 * RL2 * s), '#7fb2ff');
+    disc(c, cx + L1 * s, cy, 3.5, C.fg); text(c, 'L₁', cx + L1 * s + 2, cy - 12, C.fg, 'center');
+    if (v.f >= 1) { c.strokeStyle = '#e2683c'; c.lineWidth = 3; c.beginPath(); c.moveTo(cx + L1 * s, cy); c.quadraticCurveTo(cx + (L1 + x2) / 2 * s, cy + 0.05 * s, cx + x2 * s, cy + 0.35 * RL2 * s + 4); c.stroke(); }
+    text(c, '+ pusat massa', cx, cy + 0.42 * s, C.muted, 'center'); line(c, cx, cy - 4, cx, cy + 4, C.muted);
+    return { L1: fmt((L1 - x1), 3) + ' a dari bintang 1', RL: 'R_L1 = ' + fmt(RL1, 3) + ' a, R_L2 = ' + fmt(RL2, 3) + ' a (rumus Eggleton)', st: v.f >= 1 ? 'mengisi cuping → transfer massa lewat L₁' : 'terpisah (detached), tidak ada transfer' };
+  },
+  outputs: [['L1', 'Letak L₁'], ['RL', 'Jari-jari cuping Roche'], ['st', 'Keadaan']]
+});
+
+/* ---------- Dynamical parallax, step by step ---------- */
+LAB.paralaksdin = el => mkLab(el, {
+  title: 'Paralaks dinamika: iterasi sampai konvergen', hint: 'Mulai dari tebakan M₁ + M₂ = 2 M☉. Hukum Kepler III memberi paralaks p = α/[P^(2/3)(M₁+M₂)^(1/3)]; dari p dan magnitudo semu diperoleh magnitudo mutlak; hubungan massa–luminositas memberi massa baru; ulangi. Karena p hanya bergantung pada akar pangkat tiga massa, iterasi cepat konvergen dan tebakan awal hampir tak berpengaruh.', aspect: 0.62,
+  controls: [{ k: 'al', label: 'Setengah sumbu panjang sudut α', min: 0.1, max: 20, step: 0.001, val: 1.673, unit: '″', fmt: x => fmt(x, 3) }, { k: 'P', label: 'Periode', min: 1, max: 500, step: 0.001, val: 168.303, unit: 'tahun', fmt: x => fmt(x, 3) }, { k: 'm1', label: 'm_bol bintang 1', min: -1, max: 14, step: 0.01, val: 8.11, fmt: x => fmt(x, 2) }, { k: 'm2', label: 'm_bol bintang 2', min: -1, max: 14, step: 0.01, val: 9.11, fmt: x => fmt(x, 2) }, { k: 'M0', label: 'Tebakan awal M₁+M₂', min: 0.2, max: 20, step: 0.1, val: 2, unit: 'M☉', fmt: x => fmt(x, 1) }],
+  presets: [{ label: 'ADS 1733 (soal 21)', set: { al: 1.673, P: 168.303, m1: 8.11, m2: 9.11, M0: 2 } }, { label: '70 Oph (soal 30)', set: { al: 4.5, P: 87.7, m1: 4.0, m2: 5.9 } }, { label: 'Tebakan 10 M☉', set: { M0: 10 } }],
+  draw(c, W, H, v, C) {
+    const ML = Mb => Math.pow(10, Mb < 7.5 ? 0.1 * (4.6 - Mb) : 0.145 * (5.2 - Mb));
+    let Mt = v.M0; const rows = [];
+    for (let k = 0; k < 9; k++) { const p = v.al / (Math.pow(v.P, 2 / 3) * Math.cbrt(Mt)), M1 = v.m1 + 5 + 5 * Math.log10(p), M2 = v.m2 + 5 + 5 * Math.log10(p), a = ML(M1), b = ML(M2); rows.push([k, p, Mt, M1, M2, a, b]); Mt = a + b; }
+    c.font = `12px ${C.mono}`; const cols = ['iter', 'p (″)', 'M₁+M₂', 'Mbol₁', 'Mbol₂', 'M₁', 'M₂'], x0 = 12, cw = (W - 24) / cols.length, rh = Math.min(22, (H - 40) / 10);
+    cols.forEach((h, j) => text(c, h, x0 + j * cw, 18, C.muted)); line(c, x0, 26, W - 12, 26, C.line);
+    rows.forEach((r, i) => { const y = 26 + rh * (i + 0.8), conv = i > 0 && Math.abs(r[1] - rows[i - 1][1]) < 0.01 * r[1]; r.forEach((val, j) => text(c, j === 0 ? String(val) : fmt(val, j === 1 ? 4 : 3), x0 + j * cw, y, conv && j === 1 ? C.acc : C.fg)); });
+    const last = rows[rows.length - 1];
+    return { d: fmt(1 / last[1], 2) + ' pc (p = ' + fmt(last[1], 4) + '″)', a: fmt(v.al / last[1], 2) + ' SA', M: fmt(last[5], 3) + ' + ' + fmt(last[6], 3) + ' M☉' };
+  },
+  outputs: [['d', 'Jarak'], ['a', 'Setengah sumbu panjang'], ['M', 'Massa']]
 });
 })();
