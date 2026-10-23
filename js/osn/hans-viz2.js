@@ -554,4 +554,195 @@ LAB.fotometri = el => {
     outputs: [['sky', 'Langit rata-rata'], ['ap', 'Apertur'], ['star', 'Cahaya bintang'], ['m', 'm_ins = −2,5 log C']]
   });
 };
+
+/* ================= Bab 12: Matahari dan tata surya ================= */
+/* ---------- Solar interior + atmosphere cross-section ---------- */
+F.matahari = () => {
+  const cx = 235, cy = 262, R = 180, rc = R * 0.25, rr = R * 0.71;
+  const arc = (r, cls, extra = '') => `<path class="${cls}" ${extra} d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy} Z"/>`;
+  let b = '';
+  // corona streamers
+  [-60, -25, 15, 50].forEach(a => { const t = (a - 90) * D2R, x1 = cx + (R + 4) * Math.cos(t), y1 = cy + (R + 4) * Math.sin(t), x2 = cx + (R + 70) * Math.cos(t), y2 = cy + (R + 70) * Math.sin(t); b += `<line class="f-warn f-thin" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-dasharray="3 4"/>`; });
+  b += `<path class="f-line f-dash" d="M ${cx - R - 40} ${cy} A ${R + 40} ${R + 40} 0 0 1 ${cx + R + 40} ${cy}"/>`;
+  b += arc(R + 7, 'f-acc', 'fill="none" stroke-width="4" opacity="0.55"');
+  b += `<path d="M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy} Z" fill="#f2b33d" opacity="0.55"/>`;
+  b += `<path d="M ${cx - rr} ${cy} A ${rr} ${rr} 0 0 1 ${cx + rr} ${cy} Z" fill="#f4c55c" opacity="0.9"/>`;
+  b += `<path d="M ${cx - rc} ${cy} A ${rc} ${rc} 0 0 1 ${cx + rc} ${cy} Z" fill="#fff2b0"/>`;
+  b += `<line class="f-line" x1="${cx - R - 50}" y1="${cy}" x2="${cx + R + 50}" y2="${cy}"/>`;
+  // convection cells (left half), radiative zigzag (right half)
+  for (let i = 0; i < 7; i++) { const a = (195 + i * 21) * D2R, rm = (rr + R) / 2, x = cx + rm * Math.cos(a), y = cy + rm * Math.sin(a); b += `<circle class="f-line" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${((R - rr) / 2 - 4).toFixed(1)}" fill="none" stroke-dasharray="4 3"/>`; }
+  let z = `M ${cx + rc + 4} ${cy - 6}`; for (let i = 1; i <= 14; i++) { const r = rc + 4 + (rr - rc - 8) * i / 14, a = -(18 + (i % 2 ? 9 : 0)) * D2R; z += ` L ${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)}`; }
+  b += `<path class="f-blue" fill="none" d="${z}"/>`;
+  const lab = (x, y, s, cls = 'f-txt', a = 'start') => txt(x, y, s, cls, a);
+  b += lab(cx, cy - 22, 'inti', 'f-txt f-b', 'middle') + lab(cx, cy - 7, '15 juta K', 'f-txt', 'middle');
+  b += lab(cx + 8, cy - rc - 30, 'zona radiatif', 'f-txt f-b', 'middle') + lab(cx + 8, cy - rc - 15, 'foton "berjalan acak"', 'f-txt f-blue-t', 'middle');
+  b += lab(cx - 92, cy - 128, 'zona', 'f-txt f-b', 'middle') + lab(cx - 92, cy - 113, 'konveksi', 'f-txt f-b', 'middle');
+  const ann = [[cy - 196, 'Fotosfer · 400 km · 5800 K', 'granulasi, bintik'], [cy - 160, 'Kromosfer · 2000 km · ~10⁴ K', 'merah Hα; spikula'], [cy - 124, 'Korona · jutaan km · 1–2 juta K', 'angin surya; saat GMT, di sinar-X']];
+  ann.forEach(([y, a, s], i) => { b += lab(455, y, a, 'f-txt f-b') + lab(430, y + 15, s, 'f-txt f-mut-t'); });
+  b += `<line class="f-line f-thin" x1="${cx + 90}" y1="${cy - 156}" x2="450" y2="${cy - 200}"/><line class="f-acc f-thin" x1="${cx + 115}" y1="${cy - 147}" x2="450" y2="${cy - 164}"/><line class="f-warn f-thin" x1="${cx + 161}" y1="${cy - 135}" x2="450" y2="${cy - 128}"/>`;
+  b += lab(455, cy - 70, 'Batas 0,25 R: inti', 'f-txt') + lab(455, cy - 54, 'Batas 0,71 R: awal konveksi', 'f-txt') + lab(455, cy - 30, 'Foton dari inti butuh ~10⁵ tahun', 'f-txt f-mut-t') + lab(455, cy - 15, 'untuk sampai di fotosfer.', 'f-txt f-mut-t');
+  return svg(700, 272, b, 'Struktur Matahari', 'Separuh atas penampang Matahari: inti (energi dibangkitkan), zona radiatif (energi merambat sebagai radiasi), zona konveksi (gas panas naik, dingin turun → granulasi di fotosfer). Di atasnya atmosfer: fotosfer, kromosfer, korona. Anehnya suhu naik lagi di atas fotosfer; korona dipanasi oleh medan magnet (gelombang dan "nanoflare"), bukan oleh radiasi dari bawah.');
+};
+
+/* deterministic pseudo-random */
+const rng = seed => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+/* ---------- Sunspot cycle: butterfly diagram + Hale polarity ---------- */
+LAB.kupu = el => {
+  const SP = []; const r = rng(7);
+  const amp = ph => { const u = (ph + 0.08) / 1.13; return u < 0 || u > 1 ? 0 : Math.sin(Math.PI * Math.pow(u, 0.75)) ** 2; };
+  // three cycles of 11 yr, each spot: time, latitude, hemisphere, cycle index; each cycle overlaps the next by ~1.5 yr
+  for (let k = -1; k < 4; k++) for (let i = 0; i < 1400; i++) { const ph = r() * 1.15 - 0.08, t = 11 * k + ph * 11; if (r() > amp(ph)) continue; const lat = (35 - 29 * Math.min(1, Math.max(0, ph))) + (r() - 0.5) * 12, s = r() < 0.5 ? 1 : -1; SP.push([t, s * Math.max(2, lat), k]); }
+  return mkLab(el, {
+    title: 'Siklus 11 tahun dan diagram kupu-kupu', hint: 'Atas: setiap titik = satu kelompok bintik (lintang vs waktu). Awal siklus bintik muncul di lintang ±30°–35°, makin lama makin dekat ekuator (hukum Spörer) → bentuk sayap kupu-kupu. Bawah: bilangan bintik. Kanan: Matahari pada saat terpilih; merah = polaritas utara (+), biru = selatan (−), bintik pendahulu di depan arah rotasi. Polaritas pendahulu berbalik setiap siklus → siklus magnetik 22 tahun.', aspect: 0.62,
+    controls: [{ k: 't', label: 'Waktu', min: 0, max: 33, step: 0.05, val: 5.5, unit: 'tahun', fmt: x => fmt(x, 1) }],
+    presets: [{ label: 'Minimum', set: { t: 0.2 } }, { label: 'Awal siklus', set: { t: 1.5 } }, { label: 'Maksimum', set: { t: 5 } }, { label: 'Akhir siklus', set: { t: 10 } }, { label: 'Siklus berikutnya', set: { t: 16 } }],
+    draw(c, W, H, v, C) {
+      const pw = W * 0.66, box = [44, 10, pw - 50, H * 0.5], { X, Y } = OSN.labkit.axes(c, C, box, [0, 33], [-45, 45], { xt: [0, 11, 22, 33], yt: [-40, -20, 0, 20, 40], yf: q => q + '°', yl: 'lintang', ylo: 34 });
+      SP.forEach(([t, lat, k]) => { if (t < 0 || t > 33) return; c.fillStyle = t <= v.t ? (k % 2 ? C.blue : C.acc) : C.line; c.fillRect(X(t) - 1, Y(lat) - 1, 2.2, 2.2); });
+      const box2 = [44, box[1] + box[3] + 14, pw - 50, H - box[3] - 52], ss = t => { let s = 0; for (let k = -1; k < 4; k++) { const ph = (t - 11 * k) / 11; s += 160 * amp(ph); } return s; };
+      const A2 = OSN.labkit.axes(c, C, box2, [0, 33], [0, 200], { xt: [0, 11, 22, 33], xf: q => q + ' th', yt: [0, 100, 200], yl: 'R', ylo: 34 });
+      c.strokeStyle = C.acc; c.lineWidth = 2; c.beginPath(); for (let i = 0; i <= 330; i++) { const t = i / 10; i ? c.lineTo(A2.X(t), A2.Y(ss(t))) : c.moveTo(A2.X(t), A2.Y(ss(t))); } c.stroke();
+      line(c, X(v.t), box[1], X(v.t), box2[1] + box2[3], C.fg, 1);
+      // Sun disc
+      const sx = pw + (W - pw) / 2, sy = H * 0.42, sr = Math.min((W - pw) / 2 - 10, H * 0.32);
+      disc(c, sx, sy, sr, '#f2c45a'); ring(c, sx, sy, sr, C.line);
+      line(c, sx - sr, sy, sx + sr, sy, 'rgba(0,0,0,0.25)', 1, [3, 3]);
+      const now = SP.filter(([t]) => Math.abs(t - v.t) < 0.25);
+      now.forEach(([t, lat, k], i) => { const lon = ((i * 137.5) % 120 - 60) * D2R, la = lat * D2R, x = sx + sr * Math.cos(la) * Math.sin(lon), y = sy - sr * Math.sin(la); const lead = (k % 2 === 0) === (lat > 0); const cl = lead ? '#d9483b' : '#3b6fd9', cf = lead ? '#3b6fd9' : '#d9483b'; disc(c, x + 5, y, 2.6, cl); disc(c, x - 5, y, 2.6, cf); });
+      arrow(c, sx - sr * 0.5, sy + sr + 14, sx + sr * 0.5, sy + sr + 14, C.muted, 1.2); text(c, 'arah rotasi', sx, sy + sr + 28, C.muted, 'center');
+      const k = Math.floor(v.t / 11), ph = v.t / 11 - k, lats = now.map(s => Math.abs(s[1])), ml = lats.length ? lats.reduce((a, b) => a + b, 0) / lats.length : NaN;
+      return { ph: fmt(ph * 11, 1) + ' tahun sejak minimum (siklus ke-' + (k + 1) + ')', R: '≈ ' + fmt(ss(v.t), 0), lat: isFinite(ml) ? '≈ ' + fmt(ml, 0) + '°' : 'hampir tak ada bintik', pol: 'belahan utara: pendahulu ' + (k % 2 === 0 ? '(+) utara' : '(−) selatan') + '; selatan: kebalikannya' };
+    },
+    outputs: [['ph', 'Fase siklus'], ['R', 'Bilangan bintik (model)'], ['lat', 'Lintang rata-rata bintik'], ['pol', 'Hukum polaritas Hale']]
+  });
+};
+
+/* ---------- Babcock dynamo: differential rotation winds up the field ---------- */
+LAB.dinamo = el => mkLab(el, {
+  title: 'Rotasi diferensial menggulung medan magnet', hint: 'Garis-garis medan mula-mula membentang utara–selatan (poloidal). Ekuator berotasi ~25 hari, dekat kutub ~35 hari, sehingga garis medan tertarik ke timur di ekuator dan tergulung melingkari Matahari (toroidal). Medan yang makin rapat dan kuat mengapung (daya apung magnetik) menembus fotosfer sebagai pasangan bintik berpolaritas berlawanan. Inilah model dinamo Babcock.', aspect: 0.6,
+  controls: [{ k: 't', label: 'Waktu sejak medan lurus', min: 0, max: 900, step: 1, val: 120, unit: 'hari', fmt: x => fmt(x, 0) }, { k: 'n', label: 'Jumlah garis medan', min: 3, max: 12, step: 1, val: 7, fmt: x => fmt(x, 0) }],
+  presets: [{ label: 'Awal', set: { t: 0 } }, { label: '1 putaran ekuator', set: { t: 25.4 } }, { label: '~4 bulan', set: { t: 120 } }, { label: '~2 tahun', set: { t: 730 } }],
+  draw(c, W, H, v, C) {
+    const cx = W * 0.36, cy = H * 0.5, R = Math.min(W * 0.3, H * 0.44), Om = p => { const s = Math.sin(p) ** 2; return 14.713 - 2.396 * s - 1.787 * s * s; }; // deg/day (Snodgrass)
+    disc(c, cx, cy, R, '#f2c45a'); ring(c, cx, cy, R, C.line);
+    for (const la of [-60, -30, 0, 30, 60]) { const y = cy - R * Math.sin(la * D2R), hw = R * Math.cos(la * D2R); line(c, cx - hw, y, cx + hw, y, 'rgba(0,0,0,0.15)', 1, [2, 4]); }
+    const ref = Om(Math.PI / 2 * 0.9);
+    for (let j = 0; j < v.n; j++) {
+      const l0 = -90 + 180 * (j + 0.5) / v.n; c.strokeStyle = j % 2 ? '#b8322a' : '#7a1f8a'; c.lineWidth = 1.6; c.beginPath(); let pen = false;
+      for (let i = 0; i <= 400; i++) { const p = (-88 + 176 * i / 400) * D2R, lon = (l0 + (Om(p) - ref) * v.t) * D2R, x = Math.cos(p) * Math.sin(lon), z = Math.cos(p) * Math.cos(lon), y = Math.sin(p); if (z < 0) { pen = false; continue; } const X = cx + R * x, Y = cy - R * y; pen ? c.lineTo(X, Y) : c.moveTo(X, Y); pen = true; }
+      c.stroke();
+    }
+    // side panel: rotation profile
+    const bx = W * 0.72, bw = W * 0.24, by = 20, bh = H - 60, { X, Y } = OSN.labkit.axes(c, C, [bx, by, bw, bh], [24, 36], [-90, 90], { xt: [25, 30, 35], xf: q => q + ' h', yt: [-60, -30, 0, 30, 60], yf: q => q + '°' });
+    c.strokeStyle = C.acc; c.lineWidth = 2; c.beginPath(); for (let i = 0; i <= 90; i++) { const p = -88 + 176 * i / 90, P = 360 / Om(p * D2R); i ? c.lineTo(X(P), Y(p)) : c.moveTo(X(P), Y(p)); } c.stroke();
+    text(c, 'periode rotasi', bx + bw / 2, by + bh + 30, C.fg, 'center');
+    const lead = (Om(0) - Om(60 * D2R)) * v.t;
+    return { eq: fmt(360 / Om(0), 1) + ' hari; lintang 60°: ' + fmt(360 / Om(60 * D2R), 1) + ' hari', lead: fmt(lead, 0) + '° = ' + fmt(lead / 360, 2) + ' putaran', note: lead / 360 < 0.5 ? 'medan masih hampir poloidal' : lead / 360 < 3 ? 'medan mulai tergulung (toroidal) di lintang rendah' : 'gulungan rapat → medan kuat mengapung menjadi bintik' };
+  },
+  outputs: [['eq', 'Periode di ekuator'], ['lead', 'Ekuator mendahului lintang 60°'], ['note', 'Keadaan medan']]
+});
+
+/* ---------- Inferior planet: elongation, phase, size, brightness ---------- */
+LAB.planetdalam = el => mkLab(el, {
+  title: 'Venus dan Merkurius: elongasi, fase, ukuran, terang', hint: 'Kiri: tampak atas (Bumi diam di bawah, Matahari di tengah). θ = sudut di Matahari antara Bumi dan planet. Kanan: wujud planet di teleskop dengan ukuran sebenarnya relatif (∝ 1/jarak). Perhatikan: saat sabit planet paling besar (paling dekat), saat hampir purnama paling kecil (di balik Matahari), dan terang maksimum Venus jatuh di antaranya (sabit lebar, elongasi ~39°). Purnama penuh tak pernah terlihat karena saat itu planet tepat di belakang Matahari.', aspect: 0.56,
+  controls: [{ k: 'a', label: 'Jarak planet ke Matahari', min: 0.3, max: 0.95, step: 0.001, val: 0.723, unit: 'SA', fmt: x => fmt(x, 3) }, { k: 'th', label: 'Sudut θ (Bumi–Matahari–planet)', min: -180, max: 180, step: 0.5, val: 46, unit: '°', fmt: x => fmt(x, 1) }],
+  presets: [{ label: 'Venus', set: { a: 0.723 } }, { label: 'Merkurius', set: { a: 0.387 } }, { label: 'Konjungsi inferior', set: { th: 0.5 } }, { label: 'Elongasi terbesar', set: { th: 999 } }, { label: 'Konjungsi superior', set: { th: 180 } }, { label: 'Soal 21 (el. 30°)', set: { a: 0.7233, th: 13.73 } }],
+  onPreset: v => { if (v.th === 999) v.th = Math.acos(v.a) / D2R; },
+  draw(c, W, H, v, C) {
+    const th = v.th * D2R, cx = W * 0.3, cy = H * 0.45, s = Math.min(W * 0.26, H * 0.42), E = [cx, cy + s], P = [cx + v.a * s * Math.sin(th), cy + v.a * s * Math.cos(th)];
+    ring(c, cx, cy, s, C.line); ring(c, cx, cy, v.a * s, C.line, 1, [3, 4]);
+    line(c, E[0], E[1], cx, cy, C.sun, 1.2); line(c, E[0], E[1], P[0], P[1], C.acc, 1.6);
+    disc(c, cx, cy, 11, C.sun); disc(c, E[0], E[1], 6, C.blue); disc(c, P[0], P[1], 5, C.warn);
+    text(c, 'Bumi', E[0] + 10, E[1] + 12, C.fg); text(c, 'planet', P[0] + 8, P[1] - 8, C.warn);
+    const dx = P[0] - E[0], dy = P[1] - E[1], d = Math.hypot(dx, dy) / s, elong = Math.acos(((cx - E[0]) * dx + (cy - E[1]) * dy) / (s * d * s)) / D2R;
+    const cosA = ((E[0] - P[0]) * (cx - P[0]) + (E[1] - P[1]) * (cy - P[1])) / (d * s * v.a * s), alpha = Math.acos(Math.max(-1, Math.min(1, cosA))), k = (1 + Math.cos(alpha)) / 2;
+    c.strokeStyle = C.acc; c.lineWidth = 1; c.beginPath(); const a0 = Math.atan2(cy - E[1], cx - E[0]), a1 = Math.atan2(dy, dx); c.arc(E[0], E[1], 34, Math.min(a0, a1), Math.max(a0, a1)); c.stroke();
+    // telescope view
+    const tx = W * 0.75, ty = H * 0.36, rmax = Math.min(W * 0.2, H * 0.3), rp = Math.min(rmax, rmax * (1 - v.a) / d * 0.95);
+    ring(c, tx, ty, rmax + 6, C.line, 1, [2, 4]);
+    const east = dx < 0; // planet appears east of Sun (evening) if to the left in this view (Earth looking up, east = left)
+    disc(c, tx, ty, rp, '#2a2f3a'); c.fillStyle = '#f4efe2'; c.beginPath();
+    const sgn = east ? 1 : -1; // lit side faces the Sun: evening star -> Sun to the west (right)
+    for (let i = 0; i <= 40; i++) { const t = -Math.PI / 2 + Math.PI * i / 40; c.lineTo(tx + sgn * rp * Math.cos(t), ty + rp * Math.sin(t)); }
+    for (let i = 40; i >= 0; i--) { const t = -Math.PI / 2 + Math.PI * i / 40; c.lineTo(tx - sgn * rp * Math.cos(alpha) * Math.cos(t) * 1 * 1, ty + rp * Math.sin(t)); }
+    c.fill();
+    const B = k / (d * d), Bmax = (() => { let m = 0; for (let i = 1; i < 720; i++) { const t = i * D2R / 2, px = v.a * Math.sin(t), py = v.a * Math.cos(t), dd = Math.hypot(px, py - 1), ca = (-(px) * (0 - px) + (1 - py) * (0 - py)) / (dd * v.a); const kk = (1 + Math.max(-1, Math.min(1, ca))) / 2; m = Math.max(m, kk / (dd * dd)); } return m; })();
+    text(c, east ? 'bintang senja (timur Matahari)' : 'bintang fajar (barat Matahari)', tx, ty + rmax + 20, C.muted, 'center');
+    c.fillStyle = C.sun; c.fillRect(tx - rmax, H - 18, 2 * rmax * B / Bmax, 7); c.strokeStyle = C.line; c.strokeRect(tx - rmax, H - 18, 2 * rmax, 7); text(c, 'terang relatif', tx, H - 26, C.muted, 'center');
+    return { el: fmt(elong, 1) + '° (maks ' + fmt(Math.asin(v.a) / D2R, 1) + '°)', d: fmt(d, 3) + ' SA = ' + fmt(d * 149.6, 1) + ' juta km', k: fmt(k * 100, 0) + '% (sudut fase ' + fmt(alpha / D2R, 0) + '°)', B: fmt(100 * B / Bmax, 0) + '% dari terang maksimum' };
+  },
+  outputs: [['el', 'Elongasi'], ['d', 'Jarak dari Bumi'], ['k', 'Bagian piringan yang terang'], ['B', 'Kecerlangan (≈ k/d²)']]
+});
+
+/* ---------- Where can liquid water exist? ---------- */
+LAB.zonaair = el => mkLab(el, {
+  title: 'Di mana air bisa cair?', hint: 'Suhu kesetimbangan planet yang berotasi cepat dan memancar sebagai benda hitam: T = 278,6 K × (1 − A)^¼ × (L/L☉)^¼ / √d(SA). Pita biru = 273–373 K (air cair pada tekanan 1 atm). Tambahkan efek rumah kaca untuk melihat bagaimana atmosfer menggeser hasilnya; naikkan L untuk melihat zona bergeser keluar saat Matahari menua.', aspect: 0.55,
+  controls: [{ k: 'A', label: 'Albedo A', min: 0, max: 0.8, step: 0.01, val: 0, fmt: x => fmt(x, 2) }, { k: 'g', label: 'Pemanasan rumah kaca ΔT', min: 0, max: 500, step: 1, val: 0, unit: 'K', fmt: x => fmt(x, 0) }, { k: 'L', label: 'Luminositas Matahari', min: 0.7, max: 3, step: 0.01, val: 1, unit: 'L☉', fmt: x => fmt(x, 2) }],
+  presets: [{ label: 'Benda hitam (soal 47)', set: { A: 0, g: 0, L: 1 } }, { label: 'Albedo Bumi 0,3', set: { A: 0.3, g: 0 } }, { label: 'Bumi + rumah kaca 33 K', set: { A: 0.3, g: 33 } }, { label: 'Matahari muda 0,7 L☉', set: { L: 0.7 } }],
+  draw(c, W, H, v, C) {
+    const box = [52, 12, W - 70, H - 50], { X, Y } = OSN.labkit.axes(c, C, box, [0.2, 40], [20, 900], { xlog: true, ylog: true, xt: [0.3, 1, 3, 10, 30], xf: q => String(q).replace('.', ','), yt: [30, 100, 300, 900], yf: q => q + ' K', xl: 'jarak dari Matahari (SA)', yl: 'suhu', ylo: 40 });
+    c.fillStyle = C.blue; c.globalAlpha = 0.16; c.fillRect(box[0], Y(373), box[2], Y(273) - Y(373)); c.globalAlpha = 1;
+    const T = d => 278.6 * Math.pow(1 - v.A, 0.25) * Math.pow(v.L, 0.25) / Math.sqrt(d) + v.g;
+    c.strokeStyle = C.acc; c.lineWidth = 2.2; c.beginPath(); for (let i = 0; i <= 200; i++) { const d = 0.2 * Math.pow(200, i / 200); i ? c.lineTo(X(d), Y(T(d))) : c.moveTo(X(d), Y(T(d))); } c.stroke();
+    const pl = [['Merkurius', 0.387, 440], ['Venus', 0.723, 737], ['Bumi', 1, 288], ['Mars', 1.524, 210], ['Jupiter', 5.2, 165], ['Saturnus', 9.54, 134], ['Uranus', 19.2, 76], ['Neptunus', 30.1, 72]];
+    pl.forEach(([n, d, t]) => { const x = X(d); line(c, x, box[1], x, box[1] + box[3], C.line, 0.6, [2, 3]); disc(c, x, Y(t), 4, C.warn); const rt = x > box[0] + box[2] - 70; text(c, n, x + (rt ? -4 : 4), Y(t) - 9, C.muted, rt ? 'right' : 'left'); });
+    const k = 278.6 * Math.pow(1 - v.A, 0.25) * Math.pow(v.L, 0.25), din = 373 - v.g > 0 ? (k / (373 - v.g)) ** 2 : Infinity, dout = 273 - v.g > 0 ? (k / (273 - v.g)) ** 2 : Infinity;
+    if (isFinite(din) && isFinite(dout)) { c.fillStyle = C.acc; c.globalAlpha = 0.18; c.fillRect(X(Math.max(0.2, din)), box[1], X(Math.min(40, dout)) - X(Math.max(0.2, din)), box[3]); c.globalAlpha = 1; }
+    return { zone: isFinite(dout) ? fmt(din, 2) + ' – ' + fmt(dout, 2) + ' SA' : 'dengan ΔT sebesar ini air cair hanya di luar ' + fmt(din, 1) + ' SA', TE: fmt(T(1), 0) + ' K (Bumi nyata ±288 K)', note: 'titik oranye = suhu permukaan/awan sebenarnya' };
+  },
+  outputs: [['zone', 'Zona air cair'], ['TE', 'Suhu di 1 SA'], ['note', 'Keterangan']]
+});
+
+/* ---------- Comet orbit and its two tails ---------- */
+LAB.komet = el => mkLab(el, {
+  title: 'Komet: orbit lonjong dan dua ekor', hint: 'Geser posisi komet di orbitnya. Komet menghabiskan hampir seluruh waktunya jauh dan beku (lihat "waktu dari perihelion"). Di dalam ~3 SA es menyublim: muncul koma dan ekor. Ekor ion (biru, lurus) didorong angin surya tepat menjauhi Matahari; ekor debu (kuning, melengkung) didorong tekanan radiasi tetapi tertinggal di orbit. Saat menjauhi Matahari, ekor justru berada di DEPAN komet.', aspect: 0.62,
+  controls: [{ k: 'q', label: 'Jarak perihelion q', min: 0.1, max: 2, step: 0.01, val: 0.59, unit: 'SA', fmt: x => fmt(x, 2) }, { k: 'e', label: 'Eksentrisitas e', min: 0.3, max: 0.985, step: 0.001, val: 0.967, fmt: x => fmt(x, 3) }, { k: 'nu', label: 'Posisi (anomali benar)', min: -179, max: 179, step: 0.5, val: -60, unit: '°', fmt: x => fmt(x, 1) }],
+  presets: [{ label: 'Halley', set: { q: 0.586, e: 0.967 } }, { label: 'Keluarga Jupiter', set: { q: 1.3, e: 0.6 } }, { label: 'Encke', set: { q: 0.34, e: 0.848 } }, { label: 'Mendekat', set: { nu: -70 } }, { label: 'Perihelion', set: { nu: 0 } }, { label: 'Menjauh', set: { nu: 70 } }],
+  draw(c, W, H, v, C) {
+    const a = v.q / (1 - v.e), P = Math.pow(a, 1.5), nu = v.nu * D2R, r = a * (1 - v.e * v.e) / (1 + v.e * Math.cos(nu));
+    const E = 2 * Math.atan2(Math.sqrt(1 - v.e) * Math.sin(nu / 2), Math.sqrt(1 + v.e) * Math.cos(nu / 2)), tp = (E - v.e * Math.sin(E)) / TAU * P;
+    const view = Math.min(a * (1 + v.e), 6), bb = Math.max(1.1, Math.min(6, a * Math.sqrt(1 - v.e * v.e))), s = Math.min(W * 0.85 / (view + v.q + 0.3), H * 0.9 / (2 * bb)), sx = W * 0.92 - v.q * s, sy = H / 2;
+    const Pt = (rr, f) => [sx + rr * Math.cos(f) * s, sy - rr * Math.sin(f) * s];
+    [[1, C.blue, 'Bumi'], [5.2, C.warn, 'Jupiter']].forEach(([R, col, n]) => { ring(c, sx, sy, R * s, col, 1, [3, 4]); text(c, n, sx - R * s * 0.71, sy - R * s * 0.71 - 4, col); });
+    c.strokeStyle = C.line; c.lineWidth = 1.2; c.beginPath(); for (let i = 0; i <= 400; i++) { const f = -Math.PI + TAU * i / 400, rr = a * (1 - v.e * v.e) / (1 + v.e * Math.cos(f)); const [X, Y] = Pt(rr, f); i ? c.lineTo(X, Y) : c.moveTo(X, Y); } c.stroke();
+    arrow(c, ...Pt(a * (1 - v.e * v.e) / (1 + v.e * Math.cos(-0.5)), -0.5), ...Pt(a * (1 - v.e * v.e) / (1 + v.e * Math.cos(-0.3)), -0.3), C.muted, 1.2);
+    disc(c, sx, sy, 7, C.sun);
+    const [X, Y] = Pt(r, nu), L = r < 3 ? Math.min(2.2, 0.6 / (r * r)) : 0, ux = Math.cos(nu), uy = -Math.sin(nu);
+    if (L > 0.01) {
+      const vn = Math.hypot(Math.sin(nu), v.e + Math.cos(nu)), tx = -Math.sin(nu) / vn, ty = -(v.e + Math.cos(nu)) / vn;
+      c.strokeStyle = '#e8c35a'; c.lineCap = 'round';
+      for (let w = 0; w < 3; w++) { c.lineWidth = 7 - 2 * w; c.globalAlpha = 0.25 + 0.2 * w; c.beginPath(); c.moveTo(X, Y); for (let i = 1; i <= 20; i++) { const u = i / 20, d = L * 0.75 * u * s; c.lineTo(X + d * ux - tx * d * 0.45 * u, Y + d * uy - ty * d * 0.45 * u); } c.stroke(); }
+      c.globalAlpha = 1; c.lineCap = 'butt'; line(c, X, Y, X + ux * L * s, Y + uy * L * s, '#5b9bff', 2);
+    }
+    if (X > W - 4 || X < 4 || Y < 4 || Y > H - 4) { const cx2 = Math.max(10, Math.min(W - 10, X)), cy2 = Math.max(10, Math.min(H - 10, Y)); disc(c, cx2, cy2, 3, C.muted); text(c, 'komet di luar bingkai', cx2 + (cx2 < W / 2 ? 8 : -8), cy2 + 14, C.muted, cx2 < W / 2 ? 'left' : 'right'); }
+    else disc(c, X, Y, L > 0.01 ? 4.5 : 2.5, L > 0.01 ? '#d8ecff' : C.muted);
+    const vel = 29.78 * Math.sqrt(2 / r - 1 / a), tq = Math.abs(tp);
+    return { P: fmt(a, 2) + ' SA; P = ' + fmt(P, 1) + ' tahun (' + (P < 200 ? 'periode pendek' : 'periode panjang') + ')', Q: fmt(a * (1 + v.e), 1) + ' SA', r: fmt(r, 2) + ' SA, v = ' + fmt(vel, 1) + ' km/s', t: (tq < 1 ? fmt(tq * 365.25, 0) + ' hari ' : fmt(tq, 1) + ' tahun ') + (tp < 0 ? 'sebelum' : 'sesudah') + ' perihelion', tail: L > 0.01 ? 'aktif, ekor menjauhi Matahari' : 'beku, tanpa ekor (r > 3 SA)' };
+  },
+  outputs: [['P', 'Setengah sumbu panjang a'], ['Q', 'Aphelion'], ['r', 'Posisi sekarang'], ['t', 'Waktu dari perihelion'], ['tail', 'Ekor']]
+});
+
+/* ---------- Sidereal vs solar day ---------- */
+LAB.harisurya = el => mkLab(el, {
+  title: 'Hari sideris vs hari matahari', hint: 'Panah hitam = satu titik di permukaan planet. Satu hari sideris: panah kembali menunjuk arah bintang yang sama (sejajar arah awal). Satu hari matahari: panah kembali menunjuk Matahari. Karena planet juga berjalan di orbitnya, untuk rotasi searah revolusi planet harus berputar sedikit lebih jauh: 1/S = 1/P_rot − 1/P_orb. Untuk rotasi retrograd (Venus) tandanya plus.', aspect: 0.6,
+  controls: [{ k: 'pr', label: 'Periode rotasi (sideris)', min: 0.5, max: 6000, log: true, val: 2000, unit: 'jam', fmt: x => fmt(x, x < 10 ? 2 : 0) }, { k: 'po', label: 'Periode revolusi', min: 100, max: 20000, log: true, val: 6000, unit: 'jam', fmt: x => fmt(x, 0) }, { k: 'ret', label: 'Rotasi retrograd', type: 'toggle', val: false }, { k: 'f', label: 'Waktu (dalam satuan hari matahari)', min: 0, max: 2, step: 0.005, val: 1, fmt: x => fmt(x, 3) }],
+  presets: [{ label: 'Soal 27 (2000/6000 jam)', set: { pr: 2000, po: 6000, ret: false } }, { label: 'Bumi', set: { pr: 23.934, po: 8766, ret: false } }, { label: 'Merkurius', set: { pr: 1407.5, po: 2111.3, ret: false } }, { label: 'Venus', set: { pr: 5832.5, po: 5392.7, ret: true } }, { label: 'Mars', set: { pr: 24.623, po: 16488, ret: false } }],
+  draw(c, W, H, v, C) {
+    const sg = v.ret ? -1 : 1, inv = sg / v.pr - 1 / v.po, S = Math.abs(1 / inv), tt = v.f * (isFinite(S) ? S : v.po);
+    const cx = W * 0.4, cy = H * 0.52, R = Math.min(W * 0.3, H * 0.4), orb = TAU * tt / v.po, spin = sg * TAU * tt / v.pr;
+    ring(c, cx, cy, R, C.line, 1, [3, 4]); disc(c, cx, cy, 13, C.sun);
+    // trail of planet positions at each full solar day
+    const n = Math.min(12, Math.floor(v.f));
+    const draw1 = (o, sp, col, alpha) => { const px = cx + R * Math.cos(o), py = cy - R * Math.sin(o); c.globalAlpha = alpha; disc(c, px, py, 9, C.blue); const ax = Math.cos(sp), ay = -Math.sin(sp); arrow(c, px, py, px + ax * 30, py + ay * 30, col, 2); c.globalAlpha = 1; return [px, py]; };
+    draw1(0, Math.PI, C.fg, 0.35); text(c, 'awal (tengah hari)', cx + R, cy + 26, C.muted, 'center');
+    // at t=0 marker points to Sun: start angle = π (pointing from planet at angle 0 toward centre)
+    const [px, py] = draw1(orb, Math.PI + spin, C.fg, 1);
+    line(c, px, py, cx, cy, C.sun, 1, [2, 3]);
+    const ang = ((Math.PI + spin) - (orb + Math.PI)) / TAU, sidN = Math.abs(spin) / TAU, solN = Math.abs(ang);
+    line(c, px, py, px - 30, py, C.muted, 1, [2, 3]); text(c, 'arah awal', px - 6, py - 16, C.muted, 'right');
+    return { S: isFinite(S) ? fmt(S, 1) + ' jam = ' + fmt(S / 24, 2) + ' hari Bumi' : 'tak hingga (rotasi sinkron)', sid: fmt(sidN, 2) + ' kali (hari sideris)', sol: fmt(solN, 2) + ' kali (hari matahari)', diff: isFinite(S) ? fmt((S - v.pr) * (Math.abs(S - v.pr) < 1 ? 3600 : 1), 2) + (Math.abs(S - v.pr) < 1 ? ' detik' : ' jam') : '—' };
+  },
+  outputs: [['S', 'Hari matahari S'], ['sid', 'Sudah berotasi'], ['sol', 'Matahari sudah lewat meridian'], ['diff', 'S − hari sideris']]
+});
 })();
