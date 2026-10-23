@@ -949,4 +949,67 @@ LAB.paralaksdin = el => mkLab(el, {
   },
   outputs: [['d', 'Jarak'], ['a', 'Setengah sumbu panjang'], ['M', 'Massa']]
 });
+
+/* ================= Bab 15: Kalender dan waktu ================= */
+/* ---------- Equation of time and the analemma ---------- */
+LAB.persamaanwaktu = el => mkLab(el, {
+  title: 'Persamaan waktu dan analema', hint: 'Matahari "sebenarnya" kadang mendahului, kadang tertinggal dari Matahari rata-rata. Dua penyebab: (1) orbit elips, Bumi lebih cepat di perihelion (kurva biru, periode 1 tahun); (2) kemiringan ekliptika, gerak Matahari di ekliptika diproyeksikan ke ekuator (kurva jingga, periode ½ tahun). Jumlahnya (merah) = persamaan waktu E = α_rata-rata − α☉, antara −14 dan +16 menit. Kanan: posisi Matahari tiap hari pada jam yang sama membentuk angka 8 (analema). Ubah e atau ε untuk memisahkan kedua efek.', aspect: 0.55,
+  controls: [{ k: 'e', label: 'Eksentrisitas orbit e', min: 0, max: 0.1, step: 0.0005, val: 0.0167, fmt: x => fmt(x, 4) }, { k: 'eps', label: 'Kemiringan ekliptika ε', min: 0, max: 45, step: 0.1, val: 23.44, unit: '°', fmt: x => fmt(x, 2) }, { k: 'pw', label: 'Bujur perihelion ϖ', min: 0, max: 360, step: 1, val: 283, unit: '°', fmt: x => fmt(x, 0) }, { k: 'day', label: 'Hari ke- (1 Jan = 1)', min: 1, max: 365, step: 1, val: 42, fmt: x => { const d = new Date(Date.UTC(2025, 0, x)); return d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getUTCMonth()]; } }],
+  presets: [{ label: 'Bumi', set: { e: 0.0167, eps: 23.44, pw: 283 } }, { label: 'Hanya elips', set: { eps: 0 } }, { label: 'Hanya kemiringan', set: { e: 0 } }, { label: 'Mars (e 0,093, ε 25,2°)', set: { e: 0.0934, eps: 25.2, pw: 336 } }],
+  draw(c, W, H, v, C) {
+    const eot = (d, e, eps) => { const Lm = TAU * (d - 80) / 365.2422, M = Lm - v.pw * D2R; let E = M; for (let k = 0; k < 12; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2)), lam = nu + v.pw * D2R, al = Math.atan2(Math.cos(eps * D2R) * Math.sin(lam), Math.cos(lam)); let x = Lm - al; x = ((x + Math.PI) % TAU + TAU) % TAU - Math.PI; return { E: x / D2R * 4, dec: Math.asin(Math.sin(eps * D2R) * Math.sin(lam)) / D2R }; };
+    const box = [46, 12, W * 0.62 - 50, H - 46];
+    const lim = 20, A = OSN.labkit.axes(c, C, box, [1, 365], [-lim, lim], { xt: [1, 91, 182, 274, 365], xf: d => ({ 1: 'Jan', 91: 'Apr', 182: 'Jul', 274: 'Okt', 365: 'Des' })[d], yt: [-15, -10, -5, 0, 5, 10, 15], yl: 'menit', ylo: 34 });
+    const curve = (f, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); for (let d = 1; d <= 365; d++) { const y = Math.max(-lim, Math.min(lim, f(d))); d === 1 ? c.moveTo(A.X(d), A.Y(y)) : c.lineTo(A.X(d), A.Y(y)); } c.stroke(); };
+    curve(d => eot(d, v.e, 0).E, C.blue, 1.4); curve(d => eot(d, 0, v.eps).E, C.warn, 1.4); curve(d => eot(d, v.e, v.eps).E, C.acc, 2.4);
+    line(c, A.X(v.day), box[1], A.X(v.day), box[1] + box[3], C.fg, 1, [3, 3]);
+    // analemma
+    const ax = W * 0.66, aw = W * 0.32, ab = [ax + 30, 12, aw - 36, H - 46];
+    const A2 = OSN.labkit.axes(c, C, ab, [-lim, lim], [-Math.max(30, v.eps + 5), Math.max(30, v.eps + 5)], { xt: [-15, 0, 15], yt: [-20, 0, 20], yf: q => q + '°', xl: 'E (menit)' });
+    c.strokeStyle = C.acc; c.lineWidth = 1.8; c.beginPath(); for (let d = 1; d <= 366; d++) { const q = eot(d, v.e, v.eps); d === 1 ? c.moveTo(A2.X(q.E), A2.Y(q.dec)) : c.lineTo(A2.X(q.E), A2.Y(q.dec)); } c.stroke();
+    const q = eot(v.day, v.e, v.eps); disc(c, A2.X(q.E), A2.Y(q.dec), 5, C.sun);
+    const mm = x => { const s = Math.round(Math.abs(x) * 60); return (x < 0 ? '−' : '+') + Math.floor(s / 60) + ' m ' + String(s % 60).padStart(2, '0') + ' d'; };
+    return { E: mm(q.E), dec: fmt(q.dec, 1) + '°', noon: 'Matahari di meridian pukul ' + (() => { const t = 12 * 60 - q.E; const h = Math.floor(t / 60), m = Math.round(t - h * 60); return h + '.' + String(m).padStart(2, '0'); })() + ' waktu rata-rata lokal' };
+  },
+  outputs: [['E', 'Persamaan waktu E'], ['dec', 'Deklinasi Matahari'], ['noon', 'Tengah hari sebenarnya']]
+});
+
+/* ---------- Twilight: the Sun's altitude through the night ---------- */
+LAB.senja = el => mkLab(el, {
+  title: 'Senja sipil, nautika, astronomis', hint: 'Kurva = ketinggian pusat Matahari sepanjang 24 jam (waktu matahari sebenarnya lokal). Pita: 0° s/d −6° senja sipil, −6° s/d −12° nautika, −12° s/d −18° astronomis; di bawah −18° langit benar-benar gelap. Bila titik terendah tengah malam di atas −18° (δ ≥ 72° − φ untuk belahan utara), senja astronomis berlangsung sepanjang malam.', aspect: 0.55,
+  controls: [{ k: 'phi', label: 'Lintang φ', min: -80, max: 80, step: 0.1, val: 50, unit: '°', fmt: x => fmt(x, 1) }, { k: 'dec', label: 'Deklinasi Matahari δ', min: -23.44, max: 23.44, step: 0.01, val: 5.333, unit: '°', fmt: x => fmt(x, 2) }],
+  presets: [{ label: 'Soal 9 (50° LU, δ 5°20′)', set: { phi: 50, dec: 5.333 } }, { label: 'Soal 8 (δ 16°, φ 56°)', set: { phi: 56, dec: 16 } }, { label: 'Jakarta Juni', set: { phi: -6.2, dec: 23.44 } }, { label: 'London Juni', set: { phi: 51.5, dec: 23.44 } }],
+  draw(c, W, H, v, C) {
+    const box = [46, 12, W - 70, H - 46], A = OSN.labkit.axes(c, C, box, [0, 24], [-50, 90], { xt: [0, 6, 12, 18, 24], xf: h => h + '.00', yt: [-48, -18, -12, -6, 0, 30, 60, 90], yf: q => q + '°', yl: 'tinggi Matahari', ylo: 36 });
+    [[0, -6, 0.1], [-6, -12, 0.18], [-12, -18, 0.26]].forEach(([a, b, al]) => { c.fillStyle = C.blue; c.globalAlpha = al; c.fillRect(box[0], A.Y(a), box[2], A.Y(b) - A.Y(a)); }); c.globalAlpha = 1;
+    c.fillStyle = C.blue; c.globalAlpha = 0.4; c.fillRect(box[0], A.Y(-18), box[2], A.Y(-50) - A.Y(-18)); c.globalAlpha = 1;
+    const p = v.phi * D2R, d = v.dec * D2R, alt = t => Math.asin(Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos((t - 12) * 15 * D2R)) / D2R;
+    c.strokeStyle = C.acc; c.lineWidth = 2.2; c.beginPath(); for (let i = 0; i <= 480; i++) { const t = 24 * i / 480; const yy = A.Y(Math.max(-50, alt(t))); i ? c.lineTo(A.X(t), yy) : c.moveTo(A.X(t), yy); } c.stroke();
+    const Hh = h0 => { const x = (Math.sin(h0 * D2R) - Math.sin(p) * Math.sin(d)) / (Math.cos(p) * Math.cos(d)); return x <= -1 ? 12 : x >= 1 ? 0 : Math.acos(x) / D2R / 15; };
+    const H0 = Hh(0), H6 = Hh(-6), H12 = Hh(-12), H18 = Hh(-18), hm = x => { const s = Math.round(x * 60); return Math.floor(s / 60) + ' j ' + String(s % 60).padStart(2, '0') + ' m'; };
+    const lbl = (a, b) => b >= 12 ? 'sepanjang malam (tak pernah turun ke batasnya)' : a <= 0 && b <= 0 ? '— (Matahari tak terbit)' : hm(b - a);
+    text(c, 'sipil', box[0] + 4, A.Y(-3), C.muted); text(c, 'nautika', box[0] + 4, A.Y(-9), C.muted); text(c, 'astronomis', box[0] + 4, A.Y(-15), C.muted);
+    return { sun: H0 >= 12 ? 'Matahari tak terbenam' : H0 <= 0 ? 'Matahari tak terbit' : 'terbenam ' + hm(12 + H0) + ' (siang ' + hm(2 * H0) + ')', civ: lbl(H0, H6), nau: lbl(H0, H12), ast: lbl(H0, H18), low: fmt(-90 + Math.abs(v.phi + v.dec), 1) + '° pada tengah malam' };
+  },
+  outputs: [['sun', 'Terbenam (waktu lokal sebenarnya)'], ['civ', 'Lama senja sipil'], ['nau', 'Sampai akhir senja nautika'], ['ast', 'Sampai akhir senja astronomis'], ['low', 'Titik terendah Matahari']]
+});
+
+/* ---------- Julian vs Gregorian vs the tropical year ---------- */
+LAB.kalender = el => mkLab(el, {
+  title: 'Kalender Julian, Gregorian, dan tahun tropis', hint: 'Tahun Julian 365,25 hari terlalu panjang 0,0078 hari (11 menit) dibanding tahun tropis 365,2422 hari: ekuinoks musim semi bergeser makin awal di kalender ~1 hari tiap 128 tahun (biru). Reformasi Gregorius (1582) membuang 10 hari dan 3 kabisat tiap 400 tahun; sisa kesalahannya hanya ~1 hari tiap 3300 tahun (merah). Selisih tanggal Julian–Gregorian (jingga) bertambah 1 hari di tiap tahun abad yang tak habis dibagi 400.', aspect: 0.55,
+  controls: [{ k: 'y', label: 'Tahun', min: 0, max: 12000, step: 1, val: 2026, fmt: x => String(Math.round(x)) }, { k: 'span', label: 'Rentang grafik', min: 3000, max: 50000, step: 100, val: 12000, unit: 'tahun', fmt: x => fmt(x, 0) }],
+  presets: [{ label: 'Kini', set: { y: 2026, span: 12000 } }, { label: '1582', set: { y: 1582 } }, { label: 'Soal 20 (11600)', set: { y: 11600 } }, { label: 'Soal 21 (selisih 1 tahun)', set: { y: 48900, span: 50000 } }],
+  onPreset: v => { if (v.y > v.span) v.span = Math.min(50000, Math.ceil(v.y / 1000) * 1000 + 2000); },
+  draw(c, W, H, v, C) {
+    const diff = Y => { const n = Math.floor(Y / 100); return n - Math.floor(n / 4) - 2; }; // valid for Y between 1 Mar of century year and next
+    const box = [52, 12, W - 72, H - 46], ymax = Math.max(30, diff(v.span) * 1.05);
+    const A = OSN.labkit.axes(c, C, box, [0, v.span], [-ymax * 0.15, ymax], { xt: [0, v.span / 4, v.span / 2, 3 * v.span / 4, v.span].map(Math.round), yt: [0, Math.round(ymax / 2), Math.round(ymax)], yl: 'hari', ylo: 40, xl: 'tahun Masehi' });
+    c.strokeStyle = C.warn; c.lineWidth = 2; c.beginPath(); for (let i = 0; i <= 600; i++) { const Y = v.span * i / 600, D = Math.max(-2, diff(Y)); i ? c.lineTo(A.X(Y), A.Y(D)) : c.moveTo(A.X(Y), A.Y(D)); } c.stroke();
+    c.strokeStyle = C.blue; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i <= 600; i++) { const Y = v.span * i / 600, D = (Y - 325) * 0.0078; i ? c.lineTo(A.X(Y), A.Y(Math.min(ymax, D))) : c.moveTo(A.X(Y), A.Y(Math.min(ymax, D))); } c.stroke();
+    c.strokeStyle = C.acc; c.lineWidth = 2; c.beginPath(); for (let i = 0; i <= 600; i++) { const Y = 1582 + (v.span - 1582) * i / 600, D = (Y - 1582) * 0.0003; i ? c.lineTo(A.X(Y), A.Y(D)) : c.moveTo(A.X(Y), A.Y(D)); } c.stroke();
+    line(c, A.X(v.y), box[1], A.X(v.y), box[1] + box[3], C.fg, 1, [3, 3]);
+    return { d: v.y < 1582 ? 'belum ada kalender Gregorian' : diff(v.y) + ' hari', jul: fmt((v.y - 325) * 0.0078, 1) + ' hari lebih awal dari tanggal Konsili Nicea (325 M)', gre: v.y < 1582 ? '—' : fmt((v.y - 1582) * 0.0003, 2) + ' hari (pakai 365,2422)' };
+  },
+  outputs: [['d', 'Selisih Julian–Gregorian'], ['jul', 'Ekuinoks di kalender Julian bergeser'], ['gre', 'Kesalahan Gregorian sejak 1582']]
+});
 })();
