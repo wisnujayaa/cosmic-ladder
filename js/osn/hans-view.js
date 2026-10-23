@@ -1,6 +1,8 @@
 /* "Pembahasan Diktat Hans": companion pages for Hans Gunawan's olympiad module (2006).
    Problems are restated in our own words (same data, same numbering) with original worked solutions. */
 (function () {
+/* x^{..} and x_{..} written outside MathJax delimiters become <sup>/<sub>. */
+const PR = s => s == null ? s : String(s).split(/(\\\(.*?\\\)|\\\[.*?\\\]|\$\$.*?\$\$)/s).map((x, i) => i % 2 ? x : x.replace(/\^\{([^{}\\]*)\}/g, '<sup>$1</sup>').replace(/_\{([^{}\\]*)\}/g, '<sub>$1</sub>').replace(/\^\(([^()]*)\)/g, '<sup>$1</sup>').replace(/\^([−-]?\d+(?:,\d+)?)/g, '<sup>$1</sup>')).join('');
 const BOOK = 'Modul Persiapan Olimpiade Astronomi (edisi revisi), Hans Gunawan, 2006';
 OSN.viewHans = function (h, main, ui) {
   const { el, esc, typeset } = ui, H = OSN.HANS.slice().sort((a, b) => a.no - b.no);
@@ -23,13 +25,13 @@ OSN.viewHans = function (h, main, ui) {
   const key = h.slice(5), c = H.find(x => String(x.key || x.no) === key);
   if (!c) return false;
   const idx = H.indexOf(c), prev = H[idx - 1], next = H[idx + 1];
-  main.innerHTML = strip(c) + `<header class="chhead"><p class="eyebrow">Diktat Hans · ${c.key ? 'Kumpulan soal' : 'Bab ' + c.no}</p><h1>${c.title}</h1><p class="lead">${c.summary}</p>
+  main.innerHTML = strip(c) + `<header class="chhead"><p class="eyebrow">Diktat Hans · ${c.key ? 'Kumpulan soal' : 'Bab ' + c.no}</p><h1>${c.title}</h1><p class="lead">${PR(c.summary)}</p>
     ${c.acad && c.acad.length ? `<p class="note">Materi terkait di Akademi: ${c.acad.map(id => { const ch = OSN.CH.find(x => x.id === id); return ch ? `<a href="#${ch.id}">Bab ${ch.no} · ${ch.short}</a>` : ''; }).join(' · ')}</p>` : ''}
     <nav class="toc" aria-label="Isi">${c.topics.length ? `<a href="#hans-${key}" data-jump="h-materi">Ringkasan materi</a>` : ''}${c.groups.map((g, i) => `<a href="#hans-${key}" data-jump="h-g${i}">${g.name} (${g.items.length})</a>`).join('')}</nav></header>`;
   if (c.topics.length) {
     const sec = el('section', 'mat'); sec.id = 'h-materi'; sec.innerHTML = '<h2>Ringkasan materi</h2>';
     c.topics.forEach(t => {
-      const box = el('div', 'htopic', `<h3>${t.h}</h3><div class="prose">${t.body}</div>`);
+      const box = el('div', 'htopic', `<h3>${t.h}</h3><div class="prose">${PR(t.body)}</div>`);
       if (t.fig && OSN.FIG[t.fig]) box.appendChild(el('figure', 'fig', OSN.FIG[t.fig]()));
       if (t.lab && OSN.LAB[t.lab]) { const d = el('div'); box.appendChild(d); try { OSN.LAB[t.lab](d); } catch (e) { console.error(e); } }
       sec.appendChild(box);
@@ -56,7 +58,7 @@ OSN.viewHans = function (h, main, ui) {
 function card(it, g, ui) {
   const { el, typeset } = ui, k = el('article', 'prob hcard');
   k.dataset.text = (it.n + ' ' + it.q.replace(/<[^>]+>/g, ' ') + ' ' + (it.o || []).join(' ')).slice(0, 2000);
-  k.innerHTML = `<div class="prob-meta"><span class="tag hnum">${it.n}</span>${it.o ? '<span class="tag">Pilihan ganda</span>' : ''}${it.note ? '<span class="tag state-bad">catatan</span>' : ''}</div><div class="prob-q">${it.q}</div>`;
+  k.innerHTML = `<div class="prob-meta"><span class="tag hnum">${it.n}</span>${it.o ? '<span class="tag">Pilihan ganda</span>' : ''}${it.note ? '<span class="tag state-bad">catatan</span>' : ''}</div><div class="prob-q">${PR(it.q)}</div>`;
   const fb = el('div', 'prob-fb'); fb.hidden = true;
   let opened = false;
   const open = (pick) => {
@@ -64,7 +66,7 @@ function card(it, g, ui) {
     if (it.o) k.querySelectorAll('.opt').forEach((b, j) => { b.disabled = true; if (j === it.k) b.classList.add('ok'); else if (j === pick) b.classList.add('bad'); });
     fb.hidden = false;
     fb.innerHTML = (pick != null ? `<p class="verdict ${pick === it.k ? 'ok' : 'bad'}">${pick === it.k ? 'Benar!' : 'Belum tepat.'}</p>` : '') +
-      `<div class="sol"><span class="eyebrow">Jawaban</span><div class="hans-a">${it.a}</div>${it.s ? `<span class="eyebrow">Pembahasan</span><div>${it.s}</div>` : ''}${it.note ? `<p class="hnote"><b>Catatan:</b> ${it.note}</p>` : ''}</div>`;
+      `<div class="sol"><span class="eyebrow">Jawaban</span><div class="hans-a">${PR(it.a)}</div>${it.s ? `<span class="eyebrow">Pembahasan</span><div>${PR(it.s)}</div>` : ''}${it.note ? `<p class="hnote"><b>Catatan:</b> ${PR(it.note)}</p>` : ''}</div>`;
     if (btn) btn.remove();
     typeset(fb);
   };
@@ -72,7 +74,7 @@ function card(it, g, ui) {
   let btn = null;
   if (it.o) {
     const ol = el('div', 'opts');
-    it.o.forEach((o, j) => { const b = el('button', 'opt', `<span class="ol">${'ABCDE'[j]}</span><span>${o}</span>`); b.type = 'button'; b.onclick = () => open(j); ol.appendChild(b); });
+    it.o.forEach((o, j) => { const b = el('button', 'opt', `<span class="ol">${'ABCDE'[j]}</span><span>${PR(o)}</span>`); b.type = 'button'; b.onclick = () => open(j); ol.appendChild(b); });
     k.appendChild(ol);
   }
   btn = el('button', 'btn small' + (it.o ? ' ghost' : ''), it.o ? 'Lihat jawaban saja' : 'Lihat pembahasan'); btn.type = 'button'; btn.onclick = () => open(null);
