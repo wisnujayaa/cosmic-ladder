@@ -1043,4 +1043,32 @@ LAB.petalangit = el => mkLab(el, {
   },
   outputs: [['lst', 'Waktu sideris lokal'], ['up', 'Terlihat'], ['pol', 'Kutub langit']]
 });
+
+/* ================= Latihan pengolahan data: 40 bintang terdekat ================= */
+const NEAR = [['Proxima Cen', 0.762, 10.68, 'M5'], ['α Cen A', 0.751, 0.02, 'G2'], ['α Cen B', 0.751, 1.35, 'K5'], ['Barnard', 0.545, 9.54, 'M5'], ['Wolf 359', 0.427, 13.66, 'M6'], ['BD+36°2147', 0.396, 7.47, 'M2'], ['Sirius A', 0.375, -1.47, 'A1'], ['Sirius B', 0.375, 8.67, 'A0', 1], ['L726-8 A', 0.371, 12.45, 'M6'], ['L726-8 B', 0.371, 12.95, 'M6'], ['Ross 154', 0.340, 10.6, 'M4'], ['Ross 248', 0.316, 12.24, 'M6'], ['ε Eri', 0.303, 3.73, 'K2'], ['Ross 128', 0.298, 11.13, 'M5'], ['L789-6', 0.298, 12.58, 'M6'], ['61 Cyg A', 0.292, 5.19, 'K5'], ['61 Cyg B', 0.292, 6.02, 'K7'], ['Procyon A', 0.287, 0.34, 'F5'], ['Procyon B', 0.287, 10.7, 'F0', 1], ['ε Ind', 0.285, 4.73, 'K5'], ['BD+43°44 A', 0.278, 8.07, 'M1'], ['BD+43°44 B', 0.278, 11.04, 'M6'], ['BD+59°1915 A', 0.278, 8.90, 'M4'], ['BD+59°1915 B', 0.278, 9.69, 'M5'], ['τ Cet', 0.275, 3.50, 'G8'], ['CD−36°15693', 0.273, 7.39, 'M2'], ['BD+5°1668', 0.266, 9.82, 'M4'], ['CD−39°14192', 0.255, 6.72, 'M0'], ['CD−45°1841', 0.251, 8.8, 'M0'], ['Krüger 60 A', 0.249, 9.82, 'M4'], ['Krüger 60 B', 0.249, 11.4, 'M6'], ['Ross 614 A', 0.248, 11.2, 'M4'], ['Ross 614 B', 0.248, 14.8, 'M7'], ['CD−12°4523', 0.244, 10.13, 'M4'], ['van Maanen', 0.236, 12.36, 'G0', 1], ['Wolf 424 A', 0.228, 12.7, 'M7'], ['Wolf 424 B', 0.228, 12.7, 'M7'], ['BD+50°1725', 0.222, 6.59, 'M0'], ['CD−37°15492', 0.219, 8.59, 'M3'], ['BD+20°2465', 0.213, 9.43, 'M4.5'], ['CD−46°11540', 0.213, 9.34, 'M4'], ['CD−44°11909', 0.209, 11.2, 'M5'], ['CD−49°13515', 0.209, 8.9, 'M3'], ['CD−15°6290', 0.206, 10.17, 'M5'], ['BD+68°946', 0.205, 9.15, 'M3.5'], ['40 Eri A', 0.202, 4.48, 'K1'], ['40 Eri B', 0.202, 9.50, 'A0', 1], ['40 Eri C', 0.202, 11.1, 'M4'], ['BD+15°2620', 0.202, 8.47, 'M4'], ['Altair', 0.198, 0.78, 'A7'], ['BD+43°4305', 0.197, 10.05, 'M5'], ['AC+79°3888', 0.196, 10.9, 'M4']];
+const BCT = [[0, 4.6, 35000], [10, 3.0, 21000], [15, 1.6, 13500], [20, 0.68, 9700], [25, 0.30, 8100], [30, 0.10, 7200], [35, 0.0, 6500], [40, 0.03, 6000], [45, 0.10, 5400], [50, 0.20, 4700], [55, 0.58, 4000], [60, 1.20, 3300], [65, 2.1, 2600], [70, 2.82, 2040]];
+const spIdx = s => { const k = 'OBAFGKM'.indexOf(s[0]) * 10 - 0; return (k >= 10 ? k - 0 : k) + parseFloat(s.slice(1) || 0) + (s[0] === 'O' ? -5 : 0); };
+const bcT = s => { const x = ({ O: -5, B: 10, A: 20, F: 30, G: 40, K: 50, M: 60 })[s[0]] + parseFloat(s.slice(1) || 0); for (let i = 0; i < BCT.length - 1; i++) if (x <= BCT[i + 1][0]) { const [a, b1, t1] = BCT[i], [b, b2, t2] = BCT[i + 1], u = (x - a) / (b - a); return [b1 + u * (b2 - b1), t1 + u * (t2 - t1)]; } return [BCT[BCT.length - 1][1], BCT[BCT.length - 1][2]]; };
+LAB.bintangdekat = el => mkLab(el, {
+  title: 'Diagram H–R bintang-bintang terdekat', hint: 'Titik = bintang dari Tabel 1 buku (Gliese 1963). d = 1/p, M_V = m + 5 + 5 log p, M_bol = M_V − BC, suhu dan BC dari Tabel 2 menurut kelas spektrum (dianggap deret utama). Garis putus-putus = jari-jari tetap. Lingkaran terbuka = katai putih: kelas spektrumnya "A/F/G" tetapi 10 mag lebih redup dari deret utama, jadi jari-jarinya seukuran Bumi. Arahkan geseran untuk menyorot satu bintang.', aspect: 0.66,
+  controls: [{ k: 'i', label: 'Sorot bintang', min: 0, max: 51, step: 1, val: 6, fmt: x => NEAR[Math.round(x)][0] }, { k: 'mode', label: 'Sumbu tegak: magnitudo semu (bukan mutlak)', type: 'toggle', val: false }],
+  presets: [{ label: 'Sirius A', set: { i: 6 } }, { label: 'Sirius B', set: { i: 7 } }, { label: 'Proxima', set: { i: 0 } }, { label: 'Lihat m semu', set: { mode: true } }],
+  draw(c, W, H, v, C) {
+    const box = [52, 12, W - 70, H - 46];
+    const yr = v.mode ? [16, -2] : [18, -2];
+    const A = OSN.labkit.axes(c, C, box, [4.35, 3.3], yr, { xt: [Math.log10(20000), 4, Math.log10(6000), Math.log10(4000), Math.log10(3000)].concat(W > 500 ? [Math.log10(2500)] : []), xf: q => Math.round(10 ** q / 100) / 10 + ' kK', yt: [-2, 2, 6, 10, 14, 18].filter(q => q <= yr[0]), xl: 'suhu efektif (log)', yl: v.mode ? 'magnitudo semu' : 'M_bol', ylo: 38 });
+    if (!v.mode) [[0.01, '0,01 R☉'], [0.1, '0,1 R☉'], [1, '1 R☉']].forEach(([r]) => { c.strokeStyle = C.line; c.setLineDash([2, 4]); c.beginPath(); for (let i = 0; i <= 40; i++) { const lt = 3.3 + 1.05 * i / 40, Mb = 4.74 - 5 * Math.log10(r) - 10 * (lt - Math.log10(5772)); i ? c.lineTo(A.X(lt), A.Y(Mb)) : c.moveTo(A.X(lt), A.Y(Mb)); } c.stroke(); c.setLineDash([]); text(c, (r + ' R☉').replace('.', ','), A.X(4.2), A.Y(4.74 - 5 * Math.log10(r) - 10 * (4.2 - Math.log10(5772))) - 6, C.muted, 'center'); });
+    let nM = 0, nWD = 0; const out = {};
+    NEAR.forEach((s, j) => {
+      const [n, p, m, sp, wd] = s, [bc, T] = bcT(sp), Mv = m + 5 + 5 * Math.log10(p), Mb = Mv - bc, R = Math.sqrt(Math.pow(10, -0.4 * (Mb - 4.74))) * Math.pow(5772 / T, 2);
+      if (sp[0] === 'M') nM++; if (wd) nWD++;
+      const X = A.X(Math.log10(T)), Y = A.Y(v.mode ? m : Mb), col = OSN.labkit.bbColor(T);
+      if (wd) ring(c, X, Y, 4, col, 1.5); else disc(c, X, Y, 3.5, col);
+      if (j === Math.round(v.i)) { ring(c, X, Y, 8, C.acc, 2); text(c, n, X + 10, Y - 8, C.fg); Object.assign(out, { d: fmt(1 / p, 2) + ' pc', M: 'M_V = ' + fmt(Mv, 2) + ', M_bol = ' + fmt(Mb, 2), R: 'T ≈ ' + fmt(T, 0) + ' K, R ≈ ' + (R < 0.1 ? fmt(R, 3) : fmt(R, 2)) + ' R☉' + (wd ? ' (katai putih; suhu dari tabel deret utama tidak tepat)' : '') }); }
+    });
+    out.st = nM + ' dari ' + NEAR.length + ' bintang kelas M; ' + nWD + ' katai putih; tak ada raksasa';
+    return out;
+  },
+  outputs: [['d', 'Jarak'], ['M', 'Magnitudo mutlak'], ['R', 'Suhu dan jari-jari'], ['st', 'Statistik']]
+});
 })();
