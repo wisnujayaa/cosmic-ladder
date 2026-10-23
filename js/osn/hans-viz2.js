@@ -745,4 +745,98 @@ LAB.harisurya = el => mkLab(el, {
   },
   outputs: [['S', 'Hari matahari S'], ['sid', 'Sudah berotasi'], ['sol', 'Matahari sudah lewat meridian'], ['diff', 'S − hari sideris']]
 });
+
+/* ================= Bab 13: Gerhana ================= */
+/* ---------- Umbra, penumbra, antumbra (not to scale) ---------- */
+F.bayangan = () => {
+  const S = [70, 140], Rs = 52, M = [330, 140], Rm = 14;
+  // external tangents → umbra apex; internal tangents → penumbra
+  const d = M[0] - S[0], L = d * Rm / (Rs - Rm), apex = M[0] + L;
+  let b = `<circle class="f-sun" cx="${S[0]}" cy="${S[1]}" r="${Rs}"/><circle class="f-moon" cx="${M[0]}" cy="${M[1]}" r="${Rm}"/>`;
+  const aU = Math.asin((Rs - Rm) / d), aP = Math.asin((Rs + Rm) / d);
+  const ext = up => { const y0 = S[1] + (up ? -1 : 1) * Rs * Math.cos(aU), x0 = S[0] + Rs * Math.sin(aU), y1 = M[1] + (up ? -1 : 1) * Rm * Math.cos(aU), x1 = M[0] + Rm * Math.sin(aU); return [x0, y0, x1, y1]; };
+  const int = up => { const y0 = S[1] + (up ? -1 : 1) * Rs * Math.cos(aP), x0 = S[0] + Rs * Math.sin(aP), y1 = M[1] - (up ? -1 : 1) * Rm * Math.cos(aP), x1 = M[0] - Rm * Math.sin(aP); return [x0, y0, x1, y1]; };
+  const ext2 = (p, X) => { const [x0, y0, x1, y1] = p, t = (X - x0) / (x1 - x0); return [X, y0 + t * (y1 - y0)]; };
+  const Xe = 620; const eu = ext(true), ed = ext(false), iu = int(true), id = int(false);
+  const [, uyA] = ext2(eu, apex), pu = ext2(iu, Xe), pd = ext2(id, Xe), au = ext2(eu, Xe), ad = ext2(ed, Xe);
+  b += `<polygon class="f-penumbra" points="${eu[2].toFixed(1)},${eu[3].toFixed(1)} ${Xe},${Math.min(pu[1], pd[1]).toFixed(1)} ${Xe},${Math.max(pu[1], pd[1]).toFixed(1)} ${ed[2].toFixed(1)},${ed[3].toFixed(1)}"/>`;
+  b += `<polygon class="f-umbra" points="${eu[2].toFixed(1)},${eu[3].toFixed(1)} ${apex.toFixed(1)},${M[1]} ${ed[2].toFixed(1)},${ed[3].toFixed(1)}"/>`;
+  b += `<polygon class="f-penumbra" opacity="0.9" points="${apex.toFixed(1)},${M[1]} ${au[0]},${au[1].toFixed(1)} ${ad[0]},${ad[1].toFixed(1)}"/>`;
+  [eu, ed].forEach(p => { const q = ext2(p, Xe); b += `<line class="f-line f-thin" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0]}" y2="${q[1].toFixed(1)}"/>`; });
+  [iu, id].forEach(p => { const q = ext2(p, Xe); b += `<line class="f-line f-thin f-dash" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0]}" y2="${q[1].toFixed(1)}"/>`; });
+  // Earth surfaces at three distances
+  [[apex - 40, 'GMT'], [apex + 55, 'GMC']].forEach(([x, l]) => { b += `<path class="f-earth" d="M ${x} ${M[1] - 46} A 70 70 0 0 0 ${x} ${M[1] + 46}" fill="none" stroke-width="3"/>` + txt(x + 6, M[1] + 64, l, 'f-txt f-b'); });
+  b += txt(S[0], S[1] + Rs + 22, 'Matahari') + txt(M[0], M[1] + 32, 'Bulan');
+  b += txt((M[0] + apex) / 2 + 4, M[1] - 30, 'umbra', 'f-txt f-b') + txt(apex + 78, M[1] + 4, 'antumbra', 'f-txt f-b', 'start') + txt(565, 94, 'penumbra (GMS)', 'f-txt f-b') + txt(565, 196, 'penumbra (GMS)', 'f-txt f-b');
+  return svg(640, 280, b, 'Umbra, penumbra, antumbra', 'Garis singgung luar (tegas) membatasi umbra yang meruncing ke satu titik; di baliknya antumbra. Garis singgung dalam (putus-putus) membatasi penumbra. Bumi di dalam umbra → gerhana total; di antumbra (umbra tak sampai karena Bulan jauh) → cincin; di penumbra → sebagian. Panjang umbra Bulan ≈ 374 000 km, hampir sama dengan jarak Bumi–Bulan; itulah sebabnya kedua jenis bisa terjadi. Tidak berskala.');
+};
+
+/* ---------- Eclipse as seen: solar (Sun & Moon discs) or lunar (Moon in Earth's shadow) ---------- */
+LAB.gerhana = el => mkLab(el, {
+  title: 'Gerhana dilihat dari Bumi', hint: 'Mode Matahari: piringan Bulan (gelap) melintas di depan Matahari. Total bila diameter sudut Bulan ≥ Matahari (Bulan dekat/perige), cincin bila lebih kecil (Bulan di apoge). Mode Bulan: Bulan melintasi penumbra (abu muda) dan umbra Bumi (merah gelap). β = jarak pusat Bulan dari garis pusat (lintang ekliptika saat konjungsi/oposisi); waktu digeser untuk melihat kontak I–IV.', aspect: 0.56,
+  controls: [{ k: 'lun', label: 'Mode gerhana Bulan', type: 'toggle', val: false }, { k: 'dm', label: 'Jarak Bumi–Bulan', min: 356400, max: 406700, step: 100, val: 384400, unit: 'km', fmt: x => Math.round(x).toLocaleString('id-ID') }, { k: 'ds', label: 'Jarak Bumi–Matahari', min: 147.1, max: 152.1, step: 0.05, val: 149.6, unit: 'juta km', fmt: x => fmt(x, 2) }, { k: 'beta', label: 'β (jarak pusat dari garis sentral)', min: 0, max: 100, step: 0.5, val: 10, unit: '′', fmt: x => fmt(x, 1) }, { k: 't', label: 'Waktu dari puncak', min: -200, max: 200, step: 1, val: 0, unit: 'menit', fmt: x => fmt(x, 0) }],
+  presets: [{ label: 'GMT (perige)', set: { lun: false, dm: 357000, beta: 3 } }, { label: 'GMC (apoge)', set: { lun: false, dm: 406000, beta: 3 } }, { label: 'GMS', set: { lun: false, beta: 26 } }, { label: 'GB total', set: { lun: true, beta: 5 } }, { label: 'GB sebagian', set: { lun: true, beta: 50 } }, { label: 'GB penumbra', set: { lun: true, beta: 75 } }],
+  onPreset: v => { v.t = 0; },
+  draw(c, W, H, v, C) {
+    const as = x => Math.atan(x) * 206265 / 60; // arcmin
+    const sS = as(696000 / (v.ds * 1e6)), sM = as(1737.4 / v.dm), pM = Math.asin(6378 / v.dm) * 206265 / 60, pS = 8.794 / 60;
+    const x = v.t * (v.lun ? 0.55 : 0.51), y = v.beta;
+    const cx = W / 2, cy = H / 2, scale = Math.min(W, H) / (v.lun ? 190 : 80);
+    c.fillStyle = '#05070d'; c.fillRect(0, 0, W, H);
+    let out;
+    if (!v.lun) {
+      disc(c, cx, cy, sS * scale, '#ffd86b');
+      const d = Math.hypot(x, y); disc(c, cx + x * scale, cy - y * scale, sM * scale, '#141821');
+      if (d + sS <= sM && sM >= sS) { for (let i = 0; i < 20; i++) ring(c, cx, cy, sS * scale * (1.02 + i * 0.05), `rgba(220,230,255,${0.12 - i * 0.005})`, 3); }
+      const mag = Math.max(0, (sS + sM - d) / (2 * sS));
+      const type = d >= sS + sM ? 'tidak ada (Bulan tak menyentuh Matahari)' : d <= sM - sS ? 'TOTAL' : d <= sS - sM ? 'CINCIN' : 'sebagian';
+      const ov = (() => { const r1 = sS, r2 = sM; if (d >= r1 + r2) return 0; if (d <= Math.abs(r1 - r2)) return Math.min(1, (Math.min(r1, r2) / r1) ** 2); const a1 = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1)), a2 = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2)), k = 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2)); return (a1 + a2 - k) / (Math.PI * r1 * r1); })();
+      text(c, 'Barat', 10, cy, '#8a93a6'); text(c, 'Timur', W - 10, cy, '#8a93a6', 'right'); arrow(c, cx - 40, H - 16, cx + 40, H - 16, '#8a93a6', 1.2); text(c, 'Bulan bergerak ke timur', cx, H - 26, '#8a93a6', 'center');
+      out = { size: 'Matahari ' + fmt(2 * sS, 2) + '′, Bulan ' + fmt(2 * sM, 2) + '′ (rasio ' + fmt(sM / sS, 3) + ')', type, mag: fmt(mag, 3) + ' (bagian diameter tertutup)', obs: fmt(ov * 100, 1) + '% luas piringan' };
+    } else {
+      const rU = 1.02 * pM + pS - sS, rP = 1.02 * pM + pS + sS;
+      disc(c, cx, cy, rP * scale, 'rgba(120,130,150,0.35)'); disc(c, cx, cy, rU * scale, 'rgba(120,30,20,0.55)'); ring(c, cx, cy, rU * scale, '#a44', 1);
+      const mx = cx + x * scale, my = cy - y * scale, d = Math.hypot(x, y);
+      // Moon brightness depends on where it is
+      const inU = d < rU - sM, inPartU = d < rU + sM, inP = d < rP + sM;
+      disc(c, mx, my, sM * scale, inU ? '#7a2a1c' : '#e9e4d6');
+      if (!inU && inPartU) { c.save(); c.beginPath(); c.arc(mx, my, sM * scale, 0, TAU); c.clip(); disc(c, cx, cy, rU * scale, '#7a2a1c'); c.restore(); }
+      if (!inU && inP) { c.save(); c.beginPath(); c.arc(mx, my, sM * scale, 0, TAU); c.clip(); c.globalAlpha = 0.35; disc(c, cx, cy, rP * scale, '#333'); c.restore(); c.globalAlpha = 1; }
+      text(c, 'Barat', 10, cy, '#8a93a6'); text(c, 'Timur', W - 10, cy, '#8a93a6', 'right'); text(c, 'umbra', cx, cy + rU * scale - 12, '#e7a59a', 'center'); text(c, 'penumbra', cx, cy + rP * scale - 12, '#c8cedb', 'center');
+      const type = d >= rP + sM ? 'tidak ada' : d <= rU - sM ? 'TOTAL (seluruh Bulan di umbra)' : d < rU + sM ? 'sebagian (umbral)' : d <= rP - sM ? 'penumbra total' : 'penumbra';
+      out = { size: 'umbra ' + fmt(rU, 1) + '′ (' + fmt(rU * 60, 0) + '″), penumbra ' + fmt(rP, 1) + '′; Bulan ' + fmt(sM, 1) + '′', type, mag: fmt(Math.max(0, (rU + sM - d) / (2 * sM)), 3) + ' (magnitudo umbral)', obs: 'Bulan merah karena cahaya Matahari dibiaskan dan disaring atmosfer Bumi' };
+    }
+    return out;
+  },
+  outputs: [['size', 'Ukuran sudut (jari-jari/diameter)'], ['type', 'Jenis saat ini'], ['mag', 'Magnitudo'], ['obs', 'Keterangan']]
+});
+
+/* ---------- Eclipse seasons: Sun's distance from the node at each new/full moon ---------- */
+LAB.musimgerhana = el => mkLab(el, {
+  title: 'Musim gerhana: mengapa tidak tiap bulan?', hint: 'Lingkaran = sudut Matahari dari titik simpul (node) orbit Bulan. Gerhana Matahari hanya mungkin bila saat bulan baru Matahari berada dalam ±18,5° dari salah satu node (jingga); gerhana Bulan bila saat purnama dalam ±12,2° (biru). Tiap lunasi Matahari maju 30,67° relatif node (node mundur 19,3°/tahun), jadi dalam satu musim selalu ada minimal satu gerhana Matahari, dan musim datang tiap 173,3 hari. Geser "awal" untuk mencoba tahun lain.', aspect: 0.62,
+  controls: [{ k: 'p0', label: 'Sudut Matahari–node di bulan baru pertama', min: 0, max: 360, step: 0.5, val: 340, unit: '°', fmt: x => fmt(x, 1) }, { k: 'n', label: 'Jumlah lunasi ditampilkan', min: 6, max: 26, step: 1, val: 13, fmt: x => fmt(x, 0) }],
+  presets: [{ label: '5 GM dalam 13 lunasi', set: { p0: 343.5, n: 13 } }, { label: 'Tahun biasa', set: { p0: 300, n: 12 } }, { label: '1 Saros = 223 lunasi', set: { n: 26 } }],
+  draw(c, W, H, v, C) {
+    const cx = W * 0.32, cy = H * 0.5, R = Math.min(W * 0.27, H * 0.38), step = 360 * 29.530589 / 346.620;
+    const pt = (deg, r) => [cx + r * Math.sin(deg * D2R), cy - r * Math.cos(deg * D2R)];
+    const wedge = (c0, half, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(cx, cy); for (let a = c0 - half; a <= c0 + half; a += 1) c.lineTo(...pt(a, R)); c.closePath(); c.fill(); };
+    [0, 180].forEach(n => { wedge(n, 18.5, 'rgba(232,140,40,0.28)'); wedge(n, 12.2, 'rgba(80,140,255,0.3)'); });
+    ring(c, cx, cy, R, C.line); text(c, 'node naik', ...pt(0, R + 12), C.muted, 'center'); const [qx, qy] = pt(180, R + 14); text(c, 'node turun', qx, qy + 4, C.muted, 'center');
+    const ev = []; const sol = [], lun = [];
+    for (let k = 0; k < v.n; k++) {
+      const a = (v.p0 + k * step) % 360, b = (a + step / 2) % 360;
+      const dn = Math.min(a % 180, 180 - a % 180), df = Math.min(b % 180, 180 - b % 180);
+      const [x1, y1] = pt(a, R * (0.55 + 0.4 * k / Math.max(1, v.n))); disc(c, x1, y1, 4, dn < 18.5 ? C.warn : C.muted);  text(c, String(k + 1), x1 + 6, y1 - 6, C.muted);
+      const [x2, y2] = pt(b, R * (0.5 + 0.4 * k / Math.max(1, v.n))); ring(c, x2, y2, 3.5, df < 12.2 ? C.blue : C.line, 1.5);
+      if (dn < 18.5) sol.push(k + 1); if (df < 12.2) lun.push(k + 1);
+    }
+    // timeline
+    const bx = W * 0.64, bw = W * 0.33, by = 20, bh = H - 50; c.font = `11px ${C.ui}`;
+    text(c, 'lunasi ke-, hari ke-', bx, by - 6, C.muted); text(c, '● baru  ○ purnama', bx, H - 8, C.muted);
+    for (let k = 0; k < v.n; k++) { const y = by + 10 + k * (bh - 10) / v.n, isS = sol.includes(k + 1), isL = lun.includes(k + 1); text(c, (k + 1) + '. hari ' + fmt(k * 29.53, 0), bx, y, C.muted); if (isS) text(c, 'GM', bx + bw * 0.62, y, C.warn); if (isL) text(c, 'GB', bx + bw * 0.82, y, C.blue); }
+    const yrs = v.n * 29.53 / 365.25;
+    return { sol: sol.length + ' kali (lunasi ' + (sol.join(', ') || '—') + ')', lun: lun.length + ' kali (lunasi ' + (lun.join(', ') || '—') + ')', span: fmt(v.n * 29.53, 0) + ' hari ≈ ' + fmt(yrs, 2) + ' tahun', saros: '223 lunasi × 30,67° = ' + fmt((223 * step) % 360, 2) + '° lewat 18 putaran → hampir kembali ke posisi sama' };
+  },
+  outputs: [['sol', 'Gerhana Matahari'], ['lun', 'Gerhana Bulan (umbral)'], ['span', 'Rentang waktu'], ['saros', 'Mengapa Saros berulang']]
+});
 })();
