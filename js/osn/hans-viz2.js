@@ -1071,4 +1071,45 @@ LAB.bintangdekat = el => mkLab(el, {
   },
   outputs: [['d', 'Jarak'], ['M', 'Magnitudo mutlak'], ['R', 'Suhu dan jari-jari'], ['st', 'Statistik']]
 });
+
+/* ---------- IAO 2006: binary radio pulsar, apparent pulse period vs orbital phase ---------- */
+const PSR = [[0.136661, 4.990905], [0.211722, 4.991053], [0.268267, 4.991236], [0.343782, 4.991742], [0.373530, 4.992284], [0.376936, 4.992207], [0.384599, 4.990415], [0.386994, 4.989791], [0.406418, 4.989308], [0.410888, 4.989361], [0.415199, 4.989412], [0.452397, 4.989698], [0.465116, 4.989770], [0.503379, 4.989925], [0.671385, 4.990276], [0.774999, 4.990418], [0.986004, 4.990680]];
+const kepE = (M, e) => { let E = e < 0.8 ? M : Math.PI; for (let i = 0; i < 40; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); return E; };
+LAB.pulsar = el => mkLab(el, {
+  title: 'Pulsar biner: periode pulsa yang teramati', hint: 'Kiri: orbit pulsar mengelilingi fokus O (berlawanan jarum jam, A = apoastron, P = periastron, B dan D di ujung garis tegak lurus sumbu besar lewat O). Mata = arah pengamat. Kanan: periode pulsa teramati P_t = P₀(1 + v_r/c) terhadap fase t/T; titik = data GMRT di soal. Geser fase untuk melihat di mana pulsar berada ketika kurva melonjak.', aspect: 0.68,
+  controls: [{ k: 'e', label: 'Eksentrisitas e', min: 0, max: 0.95, step: 0.001, val: 0.866, fmt: x => fmt(x, 3) }, { k: 'w', label: 'Arah pengamat ω', min: 0, max: 359, step: 1, val: 80, fmt: x => Math.round(x) + '°' }, { k: 'ph', label: 'Fase t/T', min: 0, max: 1, step: 0.001, val: 0.38, fmt: x => fmt(x, 3) }, { k: 'dat', label: 'Tampilkan data soal', type: 'toggle', val: true }],
+  presets: [{ label: 'PSR 0514−40', set: { e: 0.866, w: 80, dat: true } }, { label: 'Orbit lingkaran', set: { e: 0, w: 80, dat: false } }, { label: 'Pengamat di sumbu kecil', set: { e: 0.866, w: 0, dat: false } }, { label: 'Pengamat di sisi periastron', set: { e: 0.866, w: 260, dat: false } }],
+  draw(c, W, H, v, C) {
+    const P0 = 4.990575, K = 89.5, cl = 299792.458, tau = 0.3835, e = v.e, w = v.w * D2R;
+    const nuAt = ph => { const M = TAU * (((ph - tau) % 1) + 1), E = kepE(M % TAU, e); return 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2)); };
+    const vr = nu => K * (Math.cos(nu + w) + e * Math.cos(w));
+    const narrow = W < 560, ow = narrow ? W : W * 0.42, oh = narrow ? H * 0.45 : H;
+    /* orbit panel */
+    const a = Math.min(ow * 0.34, oh * 0.38 / Math.max(0.3, Math.sqrt(1 - e * e))), cx = ow * 0.5 + a * e, cy = oh * 0.5;
+    const P2 = (nu) => { const r = a * (1 - e * e) / (1 + e * Math.cos(nu)); return [cx + r * Math.cos(nu), cy - r * Math.sin(nu)]; };
+    c.strokeStyle = C.line; c.lineWidth = 1.2; c.beginPath(); for (let i = 0; i <= 200; i++) { const p = P2(TAU * i / 200); i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); } c.stroke();
+    const pA = P2(Math.PI), pP = P2(0), pB = P2(Math.PI / 2), pD = P2(-Math.PI / 2);
+    line(c, pA[0], pA[1], pP[0], pP[1], C.line, 1, [3, 3]); line(c, pB[0], pB[1], pD[0], pD[1], C.line, 1, [3, 3]);
+    disc(c, cx, cy, 3, C.fg); text(c, 'O', cx + 5, cy + 13, C.muted);
+    [[pA, 'A', -12, 4], [pP, 'P', 6, 4], [pB, 'B', 6, -6], [pD, 'D', 6, 14]].forEach(([p, s, dx, dy]) => text(c, s, p[0] + dx, p[1] + dy, C.fg, 'left', `12px ${C.ui}`));
+    /* observer: direction away from observer in the orbital plane is ν = 90° − ω */
+    const ua = Math.PI / 2 - w, ca = Math.cos(ua), sa = Math.sin(ua), rr = Math.min(a * 1.25, (ow / 2 - 16) / Math.max(1e-3, Math.abs(ca)), (oh / 2 - 16) / Math.max(1e-3, Math.abs(sa))), ex = cx - a * e - ca * rr, ey = cy + sa * rr;
+    arrow(c, ex, ey, ex + Math.cos(ua) * 22, ey - Math.sin(ua) * 22, C.blue, 1.6); disc(c, ex, ey, 5, C.blue); text(c, 'pengamat', ex + (ca > 0.5 ? 0 : ca < -0.5 ? 0 : 34), ey + (sa > 0 ? -9 : 18) * (Math.abs(sa) > 0.5 ? 1 : -1), C.blue, 'center');
+    const nu = nuAt(v.ph), pp = P2(nu); disc(c, pp[0], pp[1], 6, C.acc);
+    const vr0 = vr(nu);
+    /* period curve panel */
+    const bx = narrow ? 52 : ow + 56, by = narrow ? oh + 10 : 14, bw = (narrow ? W - 60 : W - ow - 66), bh = (narrow ? H - oh - 48 : H - 54);
+    const yr = [P0 * (1 - 185 / cl), P0 * (1 + 185 / cl)];
+    const A = OSN.labkit.axes(c, C, [bx, by, bw, bh], [0, 1], yr, { xt: [0, 0.2, 0.4, 0.6, 0.8, 1], xf: q => String(q).replace('.', ','), yt: [4.988, 4.989, 4.990, 4.991, 4.992, 4.993], yf: q => q.toFixed(3).replace('.', ','), xl: 't/T', yl: 'P_t (ms)', ylo: 46 });
+    line(c, bx, A.Y(P0), bx + bw, A.Y(P0), C.muted, 1, [5, 3]); text(c, 'P₀', bx + 4, A.Y(P0) - 5, C.muted, 'left');
+    c.strokeStyle = C.acc; c.lineWidth = 1.8; c.beginPath();
+    for (let i = 0; i <= 1200; i++) { const ph = i / 1200, y = A.Y(P0 * (1 + vr(nuAt(ph)) / cl)); i ? c.lineTo(A.X(ph), y) : c.moveTo(A.X(ph), y); } c.stroke();
+    if (v.dat) PSR.forEach(([t, p]) => ring(c, A.X(t), A.Y(p), 3.5, C.fg, 1.5));
+    line(c, A.X(v.ph), by, A.X(v.ph), by + bh, C.blue, 1); disc(c, A.X(v.ph), A.Y(P0 * (1 + vr0 / cl)), 4, C.blue);
+    let vmax = -1e9, vmin = 1e9; for (let i = 0; i < 2000; i++) { const q = vr(TAU * i / 2000); vmax = Math.max(vmax, q); vmin = Math.min(vmin, q); }
+    const frac = (Math.acos(e) - e * Math.sqrt(1 - e * e)) / Math.PI;
+    return { vr: (vr0 >= 0 ? '+' : '') + fmt(vr0, 1) + ' km/s (' + (vr0 >= 0 ? 'menjauh' : 'mendekat') + ')', pt: fmt(P0 * (1 + vr0 / cl), 6) + ' ms', ext: '+' + fmt(vmax, 0) + ' / ' + fmt(vmin, 0) + ' km/s', fr: fmt(frac * 100, 1) + '% periode', u: 'u_B = u_D = ' + fmt(1 / (1 - e), 2) + ', u_P = ' + fmt((1 + e) / (1 - e), 2) + ' (u_A = 1)' };
+  },
+  outputs: [['vr', 'Kecepatan radial'], ['pt', 'P_t'], ['ext', 'v_r maks / min'], ['fr', 'Waktu di busur DPB'], ['u', 'Kecepatan transversal']]
+});
 })();

@@ -19,7 +19,7 @@ OSN.viewHans = function (h, main, ui) {
         <li>Buku ini terbit 2006. Bila ada data yang sudah usang atau soal yang keliru, pembahasan memberi catatan bertanda <span class="tag state-bad">catatan</span>.</li>
         <li>Coba kerjakan dulu, baru buka pembahasan. Untuk pilihan ganda, klik opsi untuk langsung memeriksa.</li></ul></section>
       <section class="block"><h2>Daftar bab</h2><div class="chmap">${H.map(c => `<a class="chrow" href="#hans-${c.key || c.no}"><span class="chno">${c.key ? '★' : String(c.no).padStart(2, '0')}</span><span class="chtt"><b>${c.title}</b><small>${c.topics.map(t => t.h).slice(0, 4).join(' · ')}</small></span><span class="chmeta"><span class="mono">${count(c)} soal</span></span></a>`).join('')}</div>
-      ${H.length < 17 ? `<p class="note">Bab lain sedang ditulis dan akan muncul di daftar ini.</p>` : ''}</section>`;
+      </section>`;
     return true;
   }
   const key = h.slice(5), c = H.find(x => String(x.key || x.no) === key);
